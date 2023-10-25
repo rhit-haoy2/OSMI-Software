@@ -8,8 +8,9 @@
         {
             "name": "PlatformIO",
             "includePath": [
-                "C:/Users/armstrjj/OneDrive - Rose-Hulman Institute of Technology/Documents/GitHub/OSMI-Software/include",
-                "C:/Users/armstrjj/OneDrive - Rose-Hulman Institute of Technology/Documents/GitHub/OSMI-Software/src",
+                "c:/Users/armstrjj/OneDrive - Rose-Hulman Institute of Technology/Documents/GitHub/OSMI-Software/include",
+                "c:/Users/armstrjj/OneDrive - Rose-Hulman Institute of Technology/Documents/GitHub/OSMI-Software/src",
+                "c:/Users/armstrjj/OneDrive - Rose-Hulman Institute of Technology/Documents/GitHub/OSMI-Software/.pio/libdeps/megaatmega2560/FreeRTOS/src",
                 "C:/Users/armstrjj/.platformio/packages/framework-arduino-avr/cores/arduino",
                 "C:/Users/armstrjj/.platformio/packages/framework-arduino-avr/variants/mega",
                 "C:/Users/armstrjj/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
@@ -22,8 +23,9 @@
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
-                    "C:/Users/armstrjj/OneDrive - Rose-Hulman Institute of Technology/Documents/GitHub/OSMI-Software/include",
-                    "C:/Users/armstrjj/OneDrive - Rose-Hulman Institute of Technology/Documents/GitHub/OSMI-Software/src",
+                    "c:/Users/armstrjj/OneDrive - Rose-Hulman Institute of Technology/Documents/GitHub/OSMI-Software/include",
+                    "c:/Users/armstrjj/OneDrive - Rose-Hulman Institute of Technology/Documents/GitHub/OSMI-Software/src",
+                    "c:/Users/armstrjj/OneDrive - Rose-Hulman Institute of Technology/Documents/GitHub/OSMI-Software/.pio/libdeps/megaatmega2560/FreeRTOS/src",
                     "C:/Users/armstrjj/.platformio/packages/framework-arduino-avr/cores/arduino",
                     "C:/Users/armstrjj/.platformio/packages/framework-arduino-avr/variants/mega",
                     "C:/Users/armstrjj/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
