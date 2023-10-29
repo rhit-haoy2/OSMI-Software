@@ -33,7 +33,6 @@ void loop() {
     int y = ry + random(320 - ry - ry);
     tft.fillEllipse(x, y, rx, ry, random(0xFFFF));
   }
-  Serial.println("Fuck You");
 
   delay(2000);
   tft.fillScreen(TFT_BLACK);
