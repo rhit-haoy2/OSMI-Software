@@ -473,9 +473,7 @@
             "defines": [
                 "PLATFORMIO=60111",
                 "ARDUINO_ESP32_DEV",
-                "USER_SETUP_LOADED=0",
-                "TFT_WIDTH=320",
-                "TFT_HEIGHT=240",
+                "USER_SETUP_LOADED=1",
                 "HAVE_CONFIG_H",
                 "MBEDTLS_CONFIG_FILE=\"mbedtls/esp_config.h\"",
                 "UNITY_INCLUDE_CONFIG_H",
@@ -496,6 +494,10 @@
             ],
             "cStandard": "gnu99",
             "cppStandard": "gnu++11",
+            "forcedInclude": [
+                "c:/Users/armstrjj/OneDrive - Rose-Hulman Institute of Technology/Documents/GitHub/OSMI-Software/.pio/libdeps/esp32/TFT_eSPI/User_Setups/Setup42_ILI9341_ESP32.h",
+                ""
+            ],
             "compilerPath": "C:/Users/armstrjj/.platformio/packages/toolchain-xtensa-esp32@8.4.0+2021r2-patch5/bin/xtensa-esp32-elf-gcc.exe",
             "compilerArgs": [
                 "-mlongcalls",
