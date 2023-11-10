@@ -143,7 +143,7 @@ void loop() {
   //tft.fillScreen(TFT_BLACK);
   
   // Draw changing numbers - does not work unless a filled rectangle is drawn over the old text
-while(false)
+while(true)
   {
     // Adding a parameter "true" to the setTextColor() function fills character background
     // This extra parameter is only for smooth fonts!
