@@ -40,4 +40,7 @@ void LoopControl(void *params)
         // TODO: set Wei's driver to new delay for current channel
         // kp < 1
     }
+
+    delay(15); //delay for system tick
+
 }
