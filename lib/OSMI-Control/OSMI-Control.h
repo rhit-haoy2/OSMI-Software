@@ -31,7 +31,7 @@ int stopAllChannels();
  * @param state System State
  * @return int Whether successfully set new state.
  */
-int setChannelStatus(bool newStatus, int channelHandle, ControlState state);
+int setChannelStatus(bool newStatus, int channelHandle, ControlState* state);
 
 /**Task functions, decides where each stepper needs to be at a given point.*/
 void SetupControl(void* params);

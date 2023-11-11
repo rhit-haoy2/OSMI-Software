@@ -1,7 +1,14 @@
 #include "OSMI-Control.h"
 
-int setChannelStatus(bool newStatus, int channelHandle, ControlState state)
+int setChannelStatus(bool newStatus, int channelHandle, ControlState *state)
 {
+    // guard against invalid channelHandle
+    if (channelHandle > 3 || channelHandle < 0)
+    {
+        return 1;
+    }
+
+    state->activeChannels[channelHandle] = newStatus;
     return 0;
 }
 
@@ -46,6 +53,5 @@ void LoopControl(void *params)
         // kp < 1
     }
 
-    delay(15); //delay for system tick
-
+    delay(15); // delay for system tick
 }
