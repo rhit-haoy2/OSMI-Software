@@ -1,5 +1,10 @@
 #include "OSMI-Control.h"
 
+int setChannelStatus(bool newStatus, int channelHandle, ControlState state)
+{
+    return 0;
+}
+
 void SetupControl(void *params)
 {
     ControlState *state = (ControlState *)params;
