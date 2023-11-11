@@ -2,52 +2,39 @@
 
 void SetupControl(void *params)
 {
-  float setpoint = 0; 
-  float posit = 0;
-  
-  //resistance init
-  int raw = 0;
-  int Vin = 5;
-  float Vout = 0;
-  float R1 = 10000; //known resistance
-  float R = 0; //unknown resistance
-  float buffer = 0;
+    ControlState *state = (ControlState *)params;
 
-  //control system init
-  float K = 100; //tuning parameter
-  float error = 0;
-  float gain = 0;
-    Serial.begin(9600);
+    // control system init
+    float K = 100; // tuning parameter
+
+    FastPID channel1 = FastPID(K, 0, 0, 66, 32, false);
+    state->pidChannels[0] = channel1;
 }
 
-void LoopControl()
+void LoopControl(void *params)
 {
-      //position
-  posit = analogRead(A0); //reads value of the potentiometer
-  Serial.print("position: ");
-  Serial.println(posit);
-  setpoint = ((posit-525)/498)*10000;
-  if (setpoint < 0) {
-    setpoint = 0;
-  }
-  Serial.print("setpoint: ");
-  Serial.println(setpoint);
-   
-  //resistance
-  raw = analogRead(A0);
-  if(raw){
-    buffer = raw * Vin;
-    Vout = (buffer)/1024.0;
-    buffer = (Vin/Vout) - 1;
-    R = R1 * buffer;
-    Serial.print("PV: ");
-    Serial.println(R);
-  }
-  error = setpoint - R;
-  Serial.print("error: ");
-  Serial.println(error);
-  gain = K*error;
-  Serial.print("gain: ");
-  Serial.println(gain);
-  delay(3000);
+    ControlState *state = (ControlState *)params;
+
+    uint16_t positRaw = 0;
+
+    // resistance init
+    int raw = 0;
+    int Vin = 5;
+    float Vout = 0;
+    float R1 = 10000; // known resistance
+    float R = 0;      // unknown resistance
+    float buffer = 0;
+    
+    // position
+    positRaw = analogRead(A0); // reads value of the potentiometer
+    Serial.print("position: ");
+    Serial.println(positRaw);
+    
+    //Find our new delay time from our setpoint.
+    Serial.print("setpoint: ");
+    Serial.println(positRaw);
+    uint16_t new_delay = state->pidChannels[0].step(state->targetPosition[0], positRaw);
+
+    //
+  
 }
