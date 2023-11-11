@@ -1,6 +1,6 @@
-
-
 #include "OSMI-Display.h"
+#include <Arduino.h>
+#include <SPI.h>
 
 PNG png; // PNG decoder inatance
 
@@ -20,14 +20,11 @@ void DisplayTask(void *params)
         xTaskNotifyWaitIndexed(1,ULONG_MAX, 0, &status,10);
         loopDisplay(status);
 
-
     }
 }
 
 void setupDisplay(void)
 {
-
-    Serial.begin(115200);
 
     tft.begin();
 

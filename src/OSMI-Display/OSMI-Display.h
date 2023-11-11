@@ -2,11 +2,9 @@
 
 #ifndef __OSMI_DISPLAY_H
 #define __OSMI_DISPLAY_H
-#include <Arduino.h>
 #include <PNGdec.h>
 #include "rose_logo.h" // Image is stored here in an 8 bit array
 // Include the TFT library https://github.com/Bodmer/TFT_eSPI
-#include "SPI.h"
 #include <TFT_eSPI.h>              // Hardware-specific library
 
 #define AA_FONT_SMALL "NotoSansBold15"
