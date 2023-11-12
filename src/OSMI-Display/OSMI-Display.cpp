@@ -134,7 +134,7 @@ void loopDisplay(QueueHandle_t *queue)
         bool trash = false;
         if (xQueueReceive(*queue, &trash, 2) == pdTRUE) //if something in the queue, toggle.
         {
-            enabled = !enabled;
+            enabled = trash;
         }
 
         String St1Stat = enabled ? "ON  " : "OFF"; // ON with spaces to clear out pixels.
