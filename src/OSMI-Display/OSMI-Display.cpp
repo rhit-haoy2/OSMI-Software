@@ -47,17 +47,6 @@ void setupDisplay(void)
     }
     else
         Serial.println("\r\nFonts found OK.");
-}
-
-void pngDraw(PNGDRAW *pDraw)
-{
-    uint16_t lineBuffer[ROSE_LOGO_WIDTH];
-    png.getLineAsRGB565(pDraw, lineBuffer, PNG_RGB565_BIG_ENDIAN, 0xffffffff);
-    tft.pushImage(xpos, ypos + pDraw->y, pDraw->iWidth, 1, lineBuffer);
-}
-
-void loopDisplay(QueueHandle_t *queue)
-{
 
     tft.loadFont(AA_FONT_SMALL); // Must load the font first
 
@@ -102,7 +91,24 @@ void loopDisplay(QueueHandle_t *queue)
         Serial.println("ms");
         tft.endWrite();
         png.close(); // not needed for memory->memory decode
+        
     }
+
+    Serial.print("Display() running on core ");
+    Serial.println(xPortGetCoreID());
+}
+
+void pngDraw(PNGDRAW *pDraw)
+{
+    uint16_t lineBuffer[ROSE_LOGO_WIDTH];
+    png.getLineAsRGB565(pDraw, lineBuffer, PNG_RGB565_BIG_ENDIAN, 0xffffffff);
+    tft.pushImage(xpos, ypos + pDraw->y, pDraw->iWidth, 1, lineBuffer);
+
+    
+}
+
+void loopDisplay(QueueHandle_t *queue)
+{
 
     while (true)
     {
