@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "OSMI-Display/OSMI-Display.h"
 #include "OSMI-StepperDriver/StepperDriver.h"
+#include "OSMI-Control/OSMI-Control.h"
 // #include "OSMI-StepperDriver/StepperDriver.h"
 #include "driver/ledc.h"
 
@@ -60,6 +61,14 @@ void initDebounceTimer()
 }
 
 /* End Toggle Button */
+
+void ControlTask()
+{
+	ControlState ControlParams;
+	SetupControl((void *)&ControlParams);
+	
+
+}
 
 void StepperTask(void *params)
 {
