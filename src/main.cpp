@@ -2,17 +2,31 @@
 #include "OSMI-Display/OSMI-Display.h"
 #include "OSMI-StepperDriver/StepperDriver.h"
 // #include "OSMI-StepperDriver/StepperDriver.h"
+#include "driver/ledc.h"
+
 #define DEBOUNCE_TIMER_ID 1
 #define DEBOUNCE_PRESCALE 20000
-#define DEBOUNCE_THRESHOLD 500
+#define DEBOUNCE_THRESHOLD 1000
+
+#define DEFAULT_FREQUENCY 100
+#define MOTOR_ENABLED 128
+#define MOTOR_DISABLED 0
 
 #define STEP_EN 32
 #define STEP_DIR 33
+
+typedef struct StepperParams
+{
+	QueueHandle_t *toggleQueue;
+	QueueHandle_t *frequencyQueue;
+} StepperParams_t;
 
 bool debouncing = false;
 hw_timer_t *debounce_timer;
 QueueHandle_t displayQueueHandle;
 QueueHandle_t motorQueueHandle;
+QueueHandle_t freqQueue;
+StepperParams_t t;
 
 /* Toggle Button Setup */
 
@@ -26,7 +40,6 @@ void ToggleISR()
 
 		BaseType_t toBack = pdTRUE;
 		bool toggle = true;
-		xQueueSendFromISR(displayQueueHandle, &toggle, &toBack);
 		xQueueSendFromISR(motorQueueHandle, &toggle, &toBack);
 	}
 }
@@ -50,23 +63,44 @@ void initDebounceTimer()
 
 void StepperTask(void *params)
 {
-	QueueHandle_t *queue = (QueueHandle_t *)params;
+	StepperParams_t paramStruct = *(StepperParams_t *)params;
+	QueueHandle_t *toggleQueue = paramStruct.toggleQueue;
+	QueueHandle_t *freqQueue = paramStruct.frequencyQueue;
 
-	pinMode(STEP_EN, OUTPUT);
+	/**Pre Scheduler Setep*/
+	int analog_frequency = DEFAULT_FREQUENCY; //default 1000Hz
 	pinMode(STEP_DIR, OUTPUT);
+	pinMode(STEP_EN, ANALOG);
 
-	digitalWrite(STEP_EN, 0);
+	analogWrite(STEP_EN, 0);
+	analogWriteFrequency(analog_frequency);
+
 	digitalWrite(STEP_DIR, 0);
+	bool enabled = false;
 
 	for (;;)
 	{
-		bool trash;
-		if (xQueueReceive(*queue, &trash, 2) == pdTRUE)
+		int tempFrequency = 100;
+		if (xQueueReceive(*freqQueue, &tempFrequency, 2) == pdTRUE)
 		{
-			digitalWrite(STEP_EN, digitalRead(STEP_EN) == 0 ? 1 : 0);
-			Serial.println(digitalRead(STEP_EN));
+			analog_frequency = tempFrequency;
+			Serial.print("New Frequency: ");
+			Serial.println(analog_frequency);
 		}
-		delay(15);
+
+		// TOGGLE LOGIC
+		bool trash;
+		if (xQueueReceive(*toggleQueue, &trash, 2) == pdTRUE)
+		{
+			Serial.println("Step Received Toggle");
+			enabled = !enabled;
+			analogWriteFrequency(analog_frequency);
+			analogWrite(STEP_EN, enabled ? MOTOR_ENABLED : MOTOR_DISABLED);
+			xQueueSend(displayQueueHandle, &enabled, 2);
+		}
+		// END Toggle Logic.
+
+		delay(30);
 	}
 }
 
@@ -77,10 +111,24 @@ void setup(void)
 	initDebounceTimer();
 
 	displayQueueHandle = xQueueCreate(1, sizeof(int));
+
 	motorQueueHandle = xQueueCreate(1, sizeof(int));
+	freqQueue = xQueueCreate(1, sizeof(int));
+	t = {
+		.toggleQueue = &motorQueueHandle,
+		.frequencyQueue = &freqQueue
+	};
+
+	/**Pre-Scheduler Motor Setup*/
+	pinMode(STEP_DIR, OUTPUT);
+	pinMode(STEP_EN, ANALOG);
+
+	analogWriteFrequency(DEFAULT_FREQUENCY);
+	analogWrite(STEP_EN, MOTOR_DISABLED); 
+	/** End Pre-schedulermotor setup*/
 
 	BaseType_t dispSuccess = xTaskCreate(DisplayTask, "Display", 64000, &displayQueueHandle, 2, nullptr);
-	BaseType_t stepSuccess = xTaskCreate(StepperTask, "Step", 32000, &motorQueueHandle, 1, nullptr);
+	BaseType_t stepSuccess = xTaskCreate(StepperTask, "Step", 32000, &t, 1, nullptr);
 
 	Serial.print("Display Task Status: ");
 	Serial.println(dispSuccess);
