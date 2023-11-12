@@ -27,6 +27,7 @@ void ToggleISR()
 		BaseType_t toBack = pdTRUE;
 		bool toggle = true;
 		xQueueSendFromISR(displayQueueHandle, &toggle, &toBack);
+		xQueueSendFromISR(motorQueueHandle, &toggle, &toBack);
 	}
 }
 
@@ -62,7 +63,8 @@ void StepperTask(void *params)
 		bool trash;
 		if (xQueueReceive(*queue, &trash, 2) == pdTRUE)
 		{
-			digitalWrite(STEP_EN, digitalRead(STEP_EN) ^ 1);
+			digitalWrite(STEP_EN, digitalRead(STEP_EN) == 0 ? 1 : 0);
+			Serial.println(digitalRead(STEP_EN));
 		}
 		delay(15);
 	}
