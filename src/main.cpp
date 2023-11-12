@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include "OSMI-Display/OSMI-Display.h"
 // #include "OSMI-StepperDriver/StepperDriver.h"
 #define DEBOUNCE_TIMER_ID 1
 #define DEBOUNCE_PRESCALE 20000
@@ -14,31 +15,6 @@ typedef struct StepperMotor
   int counter;
   bool enabled;
 } StepperMotor_t;
-
-typedef struct TestTaskStruct
-{
-  StepperMotor *motor;
-  QueueHandle_t stopHandle;
-} TestTaskStruct_t;
-
-void TestTask(void *params)
-{
-  TestTaskStruct_t *parm = (TestTaskStruct_t *)params;
-
-  for (;;)
-  {
-    
-    bool enable = parm->motor->enabled;
-    bool received = xQueueReceive(parm->stopHandle, &enable, 0);
-    if (received == pdTRUE)
-    {
-      parm->motor->enabled = parm->motor->enabled ^ enable;
-      Serial.print("Stepper Enabled: ");
-      Serial.println(parm->motor->enabled);
-    }
-    delay(200);
-  }
-}
 
 /* Interrupt Setup */
 
@@ -77,7 +53,6 @@ void initDebounceTimer()
 
 void setup(void)
 {
-
   Serial.begin(115200);
 
   initDebounceTimer();
@@ -88,20 +63,17 @@ void setup(void)
 
   toggleHandle = xQueueCreate(1, sizeof(int));
 
-  // Create Test Task Params
-  TestTaskStruct_t *testTaskStruct = (TestTaskStruct_t *)malloc(sizeof(TestTaskStruct_t));
-  testTaskStruct->motor = motor;
-  testTaskStruct->stopHandle = toggleHandle;
+  BaseType_t dispSuccess = xTaskCreate(DisplayTask, "Display", 64000, &toggleHandle, 1, nullptr);
 
-  // Create Test Task Struct
-  BaseType_t testSuccess = xTaskCreate(TestTask, "Test", configMINIMAL_STACK_SIZE + 512, (void *)testTaskStruct, 1, nullptr);
+  Serial.print("Display Task Status: ");
+  Serial.println(dispSuccess);
 
   // Create Start Stop Button
   pinMode(17, INPUT_PULLUP); // Set pin 17 to pullup input.
   attachInterrupt(digitalPinToInterrupt(17), ToggleISR, RISING);
+
 }
 
 void loop()
 {
-  delay(5000);
 }

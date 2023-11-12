@@ -8,19 +8,13 @@ int16_t xpos = 50;
 int16_t ypos = 150;
 
 TFT_eSPI tft = TFT_eSPI(); // Invoke custom library
+bool enabled = false;
 
 void DisplayTask(void *params)
 {
-    uint32_t status = 0;
-
     setupDisplay();
-    while (true)
-    {
-        
-        xTaskNotifyWaitIndexed(1,ULONG_MAX, 0, &status,10);
-        loopDisplay(status);
-
-    }
+    QueueHandle_t *handle = (QueueHandle_t*) params;
+    loopDisplay(handle);
 }
 
 void setupDisplay(void)
@@ -62,7 +56,7 @@ void pngDraw(PNGDRAW *pDraw)
     tft.pushImage(xpos, ypos + pDraw->y, pDraw->iWidth, 1, lineBuffer);
 }
 
-void loopDisplay(byte status)
+void loopDisplay(QueueHandle_t* queue)
 {
 
     tft.loadFont(AA_FONT_SMALL); // Must load the font first
@@ -110,8 +104,6 @@ void loopDisplay(byte status)
         png.close(); // not needed for memory->memory decode
     }
 
-    delay(5000);
-
     while (true)
     {
         // Adding a parameter "true" to the setTextColor() function fills character background
@@ -132,8 +124,19 @@ void loopDisplay(byte status)
         tft.setTextColor(TFT_GREEN, TFT_BLACK, true);
         tft.setCursor(30, 110);
 
-        String St1Stat = status&1 ? "ON" : "OFF";
 
-        tft.println("STEPPER 1" + St1Stat);
+        // Reads from Queue to toggle the stepper display.
+        noInterrupts();
+        bool toggleBuffer = false;
+        if (xQueueReceive(*queue, &toggleBuffer, 0) == pdTRUE)
+        {
+            enabled = !enabled;
+            Serial.println("New Data Received");
+        }
+        interrupts();
+        String St1Stat = enabled ? "ON  " : "OFF"; // ON with spaces to clear out pixels.
+
+        tft.println("STEPPER 1 " + St1Stat);
+        delay(60);
     }
 }

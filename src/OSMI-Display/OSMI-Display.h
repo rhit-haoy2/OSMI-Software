@@ -15,7 +15,7 @@
 
 void setupDisplay(void);
 void pngDraw(PNGDRAW *pDraw);
-void loopDisplay(byte status);
+void loopDisplay(QueueHandle_t* queue);
 void DisplayTask( void *params );
 
 #endif
