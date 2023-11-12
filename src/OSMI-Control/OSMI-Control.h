@@ -37,6 +37,6 @@ int setChannelStatus(bool newStatus, int channelHandle, ControlState* state);
 /**Task functions, decides where each stepper needs to be at a given point.*/
 void SetupControl(void* params);
 
-void LoopControl();
+void LoopControl(void *params);
 
 #endif
