@@ -62,16 +62,6 @@ void initDebounceTimer()
 
 /* End Toggle Button */
 
-void ControlTask(void *params)
-{
-	for(;;){
-		LoopControl((ControlState *)params);
-	}
-	
-	
-
-}
-
 void StepperTask(void *params)
 {
 	StepperParams_t paramStruct = *(StepperParams_t *)params;
@@ -130,9 +120,8 @@ void setup(void)
 		.frequencyQueue = &freqQueue
 	};
 
-	ControlState ControlParams;
-	SetupControl((void *)&ControlParams);
-
+	ControlState* ctrlState = (ControlState*) malloc(sizeof(ControlState));
+	*ctrlState = SetupControl();
 	/**Pre-Scheduler Motor Setup*/
 	pinMode(STEP_DIR, OUTPUT);
 	pinMode(STEP_EN, ANALOG);
@@ -141,9 +130,9 @@ void setup(void)
 	analogWrite(STEP_EN, MOTOR_DISABLED); 
 	/** End Pre-schedulermotor setup*/
 	
-	BaseType_t ControlSuccess = xTaskCreate(ControlTask, "Control", 1000, &ControlParams, 2, nullptr);
-	BaseType_t dispSuccess = xTaskCreate(DisplayTask, "Display", 64000, &displayQueueHandle, 3, nullptr);
-	BaseType_t stepSuccess = xTaskCreate(StepperTask, "Step", 32000, &t, 1, nullptr);
+	BaseType_t ControlSuccess = xTaskCreate(ControlTask, "CNTRL", 64000, ctrlState, 2, nullptr);
+	BaseType_t dispSuccess = xTaskCreate(DisplayTask, "DISP", 64000, &displayQueueHandle, 3, nullptr);
+	BaseType_t stepSuccess = xTaskCreate(StepperTask, "Step", 16000, &t, 1, nullptr);
 	
 
 	Serial.print("Display Task Status: ");
