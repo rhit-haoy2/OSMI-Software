@@ -13,6 +13,7 @@ typedef struct ControlState {
     unsigned int dosageRates[4];
     // Need to keep track of target position.
     unsigned int targetPosition[4];
+    QueueHandle_t* messageQueue;
 } ControlState;
 
 
