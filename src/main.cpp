@@ -28,9 +28,7 @@ void ToggleISR()
 
     BaseType_t toBack = pdTRUE;
     bool toggle = true;
-
-    Serial.print("Sent to Queue ");
-    Serial.println(xQueueSendFromISR(toggleHandle, &toggle, &toBack));
+    xQueueSendFromISR(toggleHandle, &toggle, &toBack);
   }
 }
 

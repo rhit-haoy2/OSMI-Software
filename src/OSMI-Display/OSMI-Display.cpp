@@ -2,18 +2,18 @@
 #include <Arduino.h>
 #include <SPI.h>
 
-PNG png; // PNG decoder inatance
+PNG png; // PNG decoder instance
 
 int16_t xpos = 50;
 int16_t ypos = 150;
 
-TFT_eSPI tft = TFT_eSPI(); // Invoke custom library
+TFT_eSPI tft = TFT_eSPI();
 bool enabled = false;
 
 void DisplayTask(void *params)
 {
     setupDisplay();
-    QueueHandle_t *handle = (QueueHandle_t*) params;
+    QueueHandle_t *handle = (QueueHandle_t *)params;
     loopDisplay(handle);
 }
 
@@ -56,7 +56,7 @@ void pngDraw(PNGDRAW *pDraw)
     tft.pushImage(xpos, ypos + pDraw->y, pDraw->iWidth, 1, lineBuffer);
 }
 
-void loopDisplay(QueueHandle_t* queue)
+void loopDisplay(QueueHandle_t *queue)
 {
 
     tft.loadFont(AA_FONT_SMALL); // Must load the font first
@@ -124,16 +124,13 @@ void loopDisplay(QueueHandle_t* queue)
         tft.setTextColor(TFT_GREEN, TFT_BLACK, true);
         tft.setCursor(30, 110);
 
-
         // Reads from Queue to toggle the stepper display.
-        noInterrupts();
-        bool toggleBuffer = false;
-        if (xQueueReceive(*queue, &toggleBuffer, 0) == pdTRUE)
+        bool trash = false;
+        if (xQueueReceive(*queue, &trash, 2) == pdTRUE) //if something in the queue, toggle.
         {
             enabled = !enabled;
-            Serial.println("New Data Received");
         }
-        interrupts();
+
         String St1Stat = enabled ? "ON  " : "OFF"; // ON with spaces to clear out pixels.
 
         tft.println("STEPPER 1 " + St1Stat);
