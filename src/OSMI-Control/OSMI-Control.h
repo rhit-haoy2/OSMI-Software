@@ -6,14 +6,14 @@
 
 typedef struct ControlState
 {
-    FastPID pidChannels[4];    // Holds PID channels for the systems.
-    bool activeChannels[4];    // Which channels are being controlled by the PID.
+    FastPID pidChannels;    // Holds PID channels for the systems.
+    bool activeChannels;    // Which channels are being controlled by the PID.
     int availableChannelCount; // How many channels are physically plugged into the system.
 
     // Keep units in mL / Hr & assume a conversion of 1 revolution == 1 ml for demo only.
-    unsigned int dosageRates[4];
+    unsigned int dosageRates;
     // Need to keep track of target position.
-    unsigned int targetPosition[4];
+    unsigned int targetPosition;
     QueueHandle_t *messageQueue;
 } ControlState;
 

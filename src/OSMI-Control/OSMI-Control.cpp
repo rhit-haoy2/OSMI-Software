@@ -3,12 +3,12 @@
 int setChannelStatus(bool newStatus, int channelHandle, ControlState *state)
 {
     // guard against invalid channelHandle
-    if (channelHandle > 3 || channelHandle < 0)
+    if (channelHandle != 0)
     {
         return 1;
     }
 
-    state->activeChannels[channelHandle] = newStatus;
+    state->activeChannels = newStatus;
     return 0;
 }
 
@@ -18,7 +18,7 @@ int SetupControl(ControlState* state)
     float K = 100; // tuning parameter
 
     FastPID channel1 = FastPID(K, 0, 0, 66, 32, false);
-    state->pidChannels[0] = channel1;
+    state->pidChannels = channel1;
 
     return 0; // Return with no Errors.
 }
@@ -48,15 +48,15 @@ void ControlTask(void *params)
         // Find our new delay time from our setpoint.
         Serial.print("setpoint: ");
         Serial.println(positRaw);
-        uint16_t new_delay = state->pidChannels[0].step(state->targetPosition[0], positRaw);
+        uint16_t new_delay = state->pidChannels.step(state->targetPosition, positRaw);
 
-        if (state->activeChannels[0])
+        if (state->activeChannels)
         {
             // TODO: set Wei's driver to new delay for current channel
             // kp < 1
-            xQueueSend(*(state->messageQueue), &new_delay, 1);
+            xQueueSend(*state->messageQueue, &new_delay, 1);
         }
 
-        delay(15); // delay for system tick
+        delay(600); // delay for system tick
     }
 }

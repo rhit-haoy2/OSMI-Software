@@ -14,6 +14,7 @@ hw_timer_t *debounce_timer;
 QueueHandle_t displayQueueHandle;
 QueueHandle_t motorQueueHandle;
 QueueHandle_t freqQueue;
+QueueHandle_t ctrlQueue;
 StepperParams_t stepperTaskParams;
 
 /* Toggle Button Setup */
@@ -63,20 +64,21 @@ void setup(void)
 	displayQueueHandle = xQueueCreate(1, sizeof(int));
 	motorQueueHandle = xQueueCreate(1, sizeof(int));
 	freqQueue = xQueueCreate(1, sizeof(int));
+	ctrlQueue = xQueueCreate(1, sizeof(int));
 
 	// Struct for toggle queue
 	stepperTaskParams = {
 		.toggleQueue = &motorQueueHandle,
 		.frequencyQueue = &freqQueue,
-		.displayQueue = &displayQueueHandle
-		};
+		.displayQueue = &displayQueueHandle};
 
-	// ControlState *ctrlState = (ControlState *)malloc(sizeof(ControlState));
+	ControlState *ctrlState = (ControlState *)malloc(sizeof(ControlState));
+	SetupControl(ctrlState);
+	ctrlState->messageQueue = &ctrlQueue;
 
-	// BaseType_t ControlSuccess = xTaskCreate(ControlTask, "CNTRL", 64000, ctrlState, 2, nullptr);
+	BaseType_t cntlSuccess = xTaskCreate(ControlTask, "CNTL", 64000, ctrlState, 2, nullptr);
 	BaseType_t dispSuccess = xTaskCreate(DisplayTask, "DISP", 64000, &displayQueueHandle, 3, nullptr);
 	BaseType_t stepSuccess = xTaskCreate(StepperTask, "STEP", 16000, &stepperTaskParams, 1, nullptr);
-	
 
 	Serial.print("Display Task Status: ");
 	Serial.println(dispSuccess);
