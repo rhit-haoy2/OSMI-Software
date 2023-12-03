@@ -109,7 +109,7 @@ void pngDraw(PNGDRAW *pDraw)
 
 void loopDisplay(QueueHandle_t *queue)
 {
-
+    uint16_t x=0,y=0;
     while (true)
     {
         // Adding a parameter "true" to the setTextColor() function fills character background
@@ -141,5 +141,10 @@ void loopDisplay(QueueHandle_t *queue)
 
         tft.println("STEPPER 1 " + St1Stat);
         delay(60);
+        
+        bool pressed = tft.getTouch(&x,&y);
+        if(pressed){
+            tft.fillCircle(x,y,2,TFT_WHITE);
+        }
     }
 }

@@ -71,9 +71,9 @@ void setup(void)
 		.displayQueue = &displayQueueHandle
 		};
 
-	ControlState *ctrlState = (ControlState *)malloc(sizeof(ControlState));
+	// ControlState *ctrlState = (ControlState *)malloc(sizeof(ControlState));
 
-	BaseType_t ControlSuccess = xTaskCreate(ControlTask, "CNTRL", 64000, ctrlState, 2, nullptr);
+	// BaseType_t ControlSuccess = xTaskCreate(ControlTask, "CNTRL", 64000, ctrlState, 2, nullptr);
 	BaseType_t dispSuccess = xTaskCreate(DisplayTask, "DISP", 64000, &displayQueueHandle, 3, nullptr);
 	BaseType_t stepSuccess = xTaskCreate(StepperTask, "STEP", 16000, &stepperTaskParams, 1, nullptr);
 	
