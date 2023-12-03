@@ -12,22 +12,21 @@ int setChannelStatus(bool newStatus, int channelHandle, ControlState *state)
     return 0;
 }
 
-ControlState SetupControl()
+int SetupControl(ControlState* state)
 {
-    ControlState state;
-
     // control system init
     float K = 100; // tuning parameter
 
     FastPID channel1 = FastPID(K, 0, 0, 66, 32, false);
-    state.pidChannels[0] = channel1;
+    state->pidChannels[0] = channel1;
 
-    return state;
+    return 0; // Return with no Errors.
 }
 
 void ControlTask(void *params)
 {
     ControlState *state = (ControlState *)params;
+    SetupControl(state); // Initialize Control Parameter.
     for (;;)
     {
 
