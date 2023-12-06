@@ -2,6 +2,7 @@
 #include "OSMI-Display/OSMI-Display.h"
 #include "OSMI-StepperDriver/StepperDriver.h"
 #include "OSMI-Control/OSMI-Control.h"
+#include "OSMI-WIFI/OSMI-WIFI.h"
 // #include "OSMI-StepperDriver/StepperDriver.h"
 #include "driver/ledc.h"
 
@@ -76,9 +77,10 @@ void setup(void)
 	SetupControl(ctrlState);
 	ctrlState->messageQueue = &ctrlQueue;
 
-	BaseType_t cntlSuccess = xTaskCreate(ControlTask, "CNTL", 64000, ctrlState, 2, nullptr);
+	BaseType_t cntlSuccess = xTaskCreate(ControlTask, "CNTL", 16000, ctrlState, 2, nullptr);
 	BaseType_t dispSuccess = xTaskCreate(DisplayTask, "DISP", 64000, &displayQueueHandle, 3, nullptr);
 	BaseType_t stepSuccess = xTaskCreate(StepperTask, "STEP", 16000, &stepperTaskParams, 1, nullptr);
+	BaseType_t wifiSUccess = xTaskCreate(WIFI_Task, "WIFI", 8000, nullptr, 1, nullptr);
 
 	Serial.print("Display Task Status: ");
 	Serial.println(dispSuccess);
