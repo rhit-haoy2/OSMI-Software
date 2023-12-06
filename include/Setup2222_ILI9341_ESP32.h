@@ -1,4 +1,5 @@
 // See SetupX_Template.h for all options available
+// NO DEBUG SETUP
 #define USER_SETUP_ID 42
 
 #define ILI9341_DRIVER
@@ -12,6 +13,7 @@
 
 // Optional touch screen chip select
 #define TOUCH_CS 5 // Chip select pin (T_CS) of touch screen
+// the touch irqn pin is currently p21
 
 #define LOAD_GLCD    // Font 1. Original Adafruit 8 pixel font needs ~1820 bytes in FLASH
 #define LOAD_FONT2   // Font 2. Small 16 pixel high font, needs ~3534 bytes in FLASH, 96 characters
