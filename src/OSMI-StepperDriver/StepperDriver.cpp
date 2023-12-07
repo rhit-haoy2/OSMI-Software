@@ -16,18 +16,18 @@ void StepperTask(void *params)
 
 	/**Pre Scheduler Setep*/
 	int analog_frequency = DEFAULT_FREQUENCY; // default 1000Hz
-	pinMode(STEP_DIR, OUTPUT);
-	pinMode(STEP_EN, ANALOG);
+	pinMode(STEP_DIR, OUTPUT); // Forward / Reverse
+	pinMode(STEP_EN, ANALOG); //ANALOG == PWM
 
-	analogWrite(STEP_EN, 0);
-	analogWriteFrequency(analog_frequency);
+	analogWrite(STEP_EN, 0); // No Steps
+	analogWriteFrequency(analog_frequency); 
 
-	digitalWrite(STEP_DIR, 0);
+	digitalWrite(STEP_DIR, 0); // Forward.
 	bool enabled = false;
 
 	for (;;)
 	{
-		int tempFrequency = 100;
+		int tempFrequency = 100; // temp iff no queue to be read.
 		if (xQueueReceive(*freqQueue, &tempFrequency, 2) == pdTRUE)
 		{
 			analog_frequency = tempFrequency;
@@ -35,7 +35,8 @@ void StepperTask(void *params)
 			Serial.println(analog_frequency);
 		}
 
-		// TOGGLE LOGIC
+		// TOGGLE LOGIC 
+		// TODO needs validating for e-stop.
 		bool trash;
 		if (xQueueReceive(*toggleQueue, &trash, 2) == pdTRUE)
 		{

@@ -32,7 +32,7 @@ void ControlTask(void *params)
 
         uint16_t positRaw = 0;
 
-        // resistance init
+        // Feedback from potentiometer.
         int raw = 0;
         int Vin = 5;
         float Vout = 0;
