@@ -77,8 +77,8 @@ void setup(void)
 	SetupControl(ctrlState);
 	ctrlState->messageQueue = &ctrlQueue;
 
-	BaseType_t cntlSuccess = xTaskCreate(ControlTask, "CNTL", 16000, ctrlState, 2, nullptr);
-	BaseType_t dispSuccess = xTaskCreate(DisplayTask, "DISP", 64000, &displayQueueHandle, 3, nullptr);
+	BaseType_t cntlSuccess = xTaskCreate(ControlTask, "CNTL", 16000, ctrlState, 3, nullptr);
+	BaseType_t dispSuccess = xTaskCreate(DisplayTask, "DISP", 64000, &displayQueueHandle, 2, nullptr);
 	BaseType_t stepSuccess = xTaskCreate(StepperTask, "STEP", 16000, &stepperTaskParams, 1, nullptr);
 	BaseType_t wifiSUccess = xTaskCreate(WIFI_Task, "WIFI", 8000, nullptr, 1, nullptr);
 

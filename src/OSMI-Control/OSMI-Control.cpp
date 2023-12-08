@@ -8,7 +8,6 @@ int setChannelStatus(bool newStatus, int channelHandle, ControlState *state)
         return 1;
     }
 
-    state->activeChannels = newStatus;
     return 0;
 }
 
@@ -27,7 +26,7 @@ void ControlTask(void *params)
 {
     ControlState *state = (ControlState *)params;
     SetupControl(state); // Initialize Control Parameter.
-    for (;;)
+    while (1)
     {
 
         uint16_t positRaw = 0;
@@ -49,13 +48,6 @@ void ControlTask(void *params)
         Serial.print("setpoint: ");
         Serial.println(positRaw);
         uint16_t new_delay = state->pidChannels.step(state->targetPosition, positRaw);
-
-        if (state->activeChannels)
-        {
-            // TODO: set Wei's driver to new delay for current channel
-            // kp < 1
-            xQueueSend(*state->messageQueue, &new_delay, 1);
-        }
 
         delay(600); // delay for system tick
     }

@@ -7,7 +7,6 @@
 typedef struct ControlState
 {
     FastPID pidChannels;    // Holds PID channels for the systems.
-    bool activeChannels;    // Which channels are being controlled by the PID.
     int availableChannelCount; // How many channels are physically plugged into the system.
 
     // Keep units in mL / Hr & assume a conversion of 1 revolution == 1 ml for demo only.
