@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include "OSMI-Display/OSMI-Display.h"
-#include "OSMI-StepperDriver/StepperDriver.h"
 #include "OSMI-Control/OSMI-Control.h"
 #include "OSMI-WIFI/OSMI-WIFI.h"
 // #include "OSMI-StepperDriver/StepperDriver.h"
@@ -16,7 +15,6 @@ QueueHandle_t displayQueueHandle;
 QueueHandle_t motorQueueHandle;
 QueueHandle_t freqQueue;
 QueueHandle_t ctrlQueue;
-StepperParams_t stepperTaskParams;
 
 /* Toggle Button Setup */
 
@@ -67,25 +65,16 @@ void setup(void)
 	freqQueue = xQueueCreate(1, sizeof(int));
 	ctrlQueue = xQueueCreate(1, sizeof(int));
 
-	// Struct for toggle queue
-	stepperTaskParams = {
-		.toggleQueue = &motorQueueHandle,
-		.frequencyQueue = &freqQueue,
-		.displayQueue = &displayQueueHandle};
-
 	ControlState *ctrlState = (ControlState *)malloc(sizeof(ControlState));
 	SetupControl(ctrlState);
 	ctrlState->messageQueue = &ctrlQueue;
 
 	BaseType_t cntlSuccess = xTaskCreate(ControlTask, "CNTL", 16000, ctrlState, 3, nullptr);
 	BaseType_t dispSuccess = xTaskCreate(DisplayTask, "DISP", 64000, &displayQueueHandle, 2, nullptr);
-	BaseType_t stepSuccess = xTaskCreate(StepperTask, "STEP", 16000, &stepperTaskParams, 1, nullptr);
 	BaseType_t wifiSUccess = xTaskCreate(WIFI_Task, "WIFI", 8000, nullptr, 1, nullptr);
 
 	Serial.print("Display Task Status: ");
 	Serial.println(dispSuccess);
-	Serial.print("Step Task Status: ");
-	Serial.println(stepSuccess);
 }
 
 // Loop never reached.

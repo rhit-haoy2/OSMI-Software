@@ -11,13 +11,15 @@ int setChannelStatus(bool newStatus, int channelHandle, ControlState *state)
     return 0;
 }
 
-int SetupControl(ControlState* state)
+int SetupControl(ControlState *state)
 {
     // control system init
     float K = 100; // tuning parameter
 
     FastPID channel1 = FastPID(K, 0, 0, 66, 32, false);
-    state->pidChannels = channel1;
+    state->pidChannel = channel1;
+    state->startTime = 0;
+    state->enabled = false;
 
     return 0; // Return with no Errors.
 }
@@ -39,6 +41,7 @@ void ControlTask(void *params)
         float R = 0;      // unknown resistance
         float buffer = 0;
 
+        // TODO: Reconfigure to dosage rate. See chart for example.
         // position
         positRaw = analogRead(A0); // reads value of the potentiometer
         Serial.print("position: ");
@@ -47,7 +50,12 @@ void ControlTask(void *params)
         // Find our new delay time from our setpoint.
         Serial.print("setpoint: ");
         Serial.println(positRaw);
-        uint16_t new_delay = state->pidChannels.step(state->targetPosition, positRaw);
+
+        // Write to PWM
+        analogWriteFrequency(positRaw);
+
+        state->pulseFrequency = positRaw;
+        analogWrite(STEP_EN, state->enabled ? MOTOR_ENABLED : MOTOR_DISABLED);
 
         delay(600); // delay for system tick
     }

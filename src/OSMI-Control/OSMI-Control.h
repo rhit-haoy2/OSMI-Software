@@ -4,15 +4,23 @@
 #include <FastPID.h>
 #include <Arduino.h>
 
+#define STEP_EN 32
+#define STEP_DIR 33
+
+#define DEFAULT_FREQUENCY 100
+#define MOTOR_ENABLED 128
+#define MOTOR_DISABLED 0
+
 typedef struct ControlState
 {
-    FastPID pidChannels;    // Holds PID channels for the systems.
-    int availableChannelCount; // How many channels are physically plugged into the system.
+    FastPID pidChannel; // Holds PID channels for the systems.
 
     // Keep units in mL / Hr & assume a conversion of 1 revolution == 1 ml for demo only.
-    unsigned int dosageRates;
-    // Need to keep track of target position.
-    unsigned int targetPosition;
+    unsigned int pulseFrequency;
+    unsigned long startTime;
+
+    bool enabled;
+
     QueueHandle_t *messageQueue;
 } ControlState;
 
