@@ -30,23 +30,7 @@ void ControlTask(void *params)
     SetupControl(state); // Initialize Control Parameter.
     while (1)
     {
-
-        uint16_t positRaw = 0;
-
-        // Feedback from potentiometer.
-        int raw = 0;
-        int Vin = 5;
-        float Vout = 0;
-        float R1 = 10000; // known resistance
-        float R = 0;      // unknown resistance
-        float buffer = 0;
-
-        // TODO: Reconfigure to dosage rate. See chart for example.
-        // position
-        positRaw = analogRead(A0); // reads value of the potentiometer
-        Serial.print("position: ");
-        Serial.println(positRaw);
-
+        int positRaw = 5000;
         // Find our new delay time from our setpoint.
         Serial.print("setpoint: ");
         Serial.println(positRaw);
