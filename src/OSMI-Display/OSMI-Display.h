@@ -14,8 +14,6 @@
 #define DISPLAY_VERT 320
 #define DISPLAY_HORZ 240
 
-void setupDisplay(void);
-void loopDisplay(QueueHandle_t* queue);
 void DisplayTask( void *params );   
 void display_flush(lv_disp_t* disp, const lv_area_t* area, lv_color_t* color_p);
 
