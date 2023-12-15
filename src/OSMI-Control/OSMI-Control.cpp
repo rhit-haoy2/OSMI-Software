@@ -36,7 +36,7 @@ void ControlTask(void *params)
         Serial.println(positRaw);
 
         // Write to PWM
-        analogWriteFrequency(positRaw);
+        analogWriteFrequency(1000);
 
         state->pulseFrequency = positRaw;
         analogWrite(STEP_EN, state->enabled ? MOTOR_ENABLED : MOTOR_DISABLED);
