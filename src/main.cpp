@@ -13,7 +13,6 @@ bool debouncing = false;
 hw_timer_t *debounce_timer;
 QueueHandle_t displayQueueHandle;
 QueueHandle_t motorQueueHandle;
-QueueHandle_t freqQueue;
 QueueHandle_t ctrlQueue;
 
 /* Toggle Button Setup */
@@ -62,14 +61,11 @@ void setup(void)
 	// Create the communication lines between tasks. Usually only one number at a time.
 	displayQueueHandle = xQueueCreate(1, sizeof(int));
 	motorQueueHandle = xQueueCreate(1, sizeof(int));
-	freqQueue = xQueueCreate(1, sizeof(int));
 	ctrlQueue = xQueueCreate(1, sizeof(int));
 
-	ControlState *ctrlState = (ControlState *)malloc(sizeof(ControlState));
-	SetupControl(ctrlState);
-	ctrlState->messageQueue = &ctrlQueue;
+	ControlState *controlState = new ControlState(ctrlQueue, 1);
 
-	BaseType_t cntlSuccess = xTaskCreate(ControlTask, "CNTL", 16000, ctrlState, 3, nullptr);
+	BaseType_t cntlSuccess = xTaskCreate(ControlTask, "CNTL", 16000, controlState, 3, nullptr);
 	BaseType_t dispSuccess = xTaskCreate(DisplayTask, "DISP", 64000, &displayQueueHandle, 2, nullptr);
 	BaseType_t wifiSUccess = xTaskCreate(WIFI_Task, "WIFI", 8000, nullptr, 1, nullptr);
 
