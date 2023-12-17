@@ -15,6 +15,9 @@ void ControlTask(void *params)
 {
     FluidDeliveryController *state = (FluidDeliveryController *)params;
 
+    /**TODO Setup timer for sending an update fluid status*/
+    
+
     while (1)
     {
         FluidControlEvent *e;
