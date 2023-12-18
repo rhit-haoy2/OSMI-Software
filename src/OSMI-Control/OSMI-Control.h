@@ -11,24 +11,29 @@
 #define MOTOR_ENABLED 128
 #define MOTOR_DISABLED 0
 
-/**
- * @brief Abstract Driver for Fluid Delivery Driver
- * 
- */
-class FluidDeliveryDriver {
-    virtual FluidDeliveryError setFlowRate (int freq) = 0;
+class FluidDeliveryError
+{
+public:
+    FluidDeliveryError(int fault)
+    {
+        this->fault = fault;
+    };
 
-    virtual void disable() = 0;
-    virtual void enable() = 0;
+    int getID()
+    {
+        return fault;
+    };
 
-    virtual int getDistanceFB() = 0;
+protected:
+    int fault;
 };
 
-class FluidDeliveryError {
-    virtual int getID() = 0;
+/***/
+class FluidDeliveryOK : public FluidDeliveryError
+{
+public:
+    FluidDeliveryOK() : FluidDeliveryError(0) {};
 };
-
-
 
 class FluidControlEvent
 {
@@ -36,11 +41,26 @@ public:
     virtual int getID() = 0;
 };
 
-typedef struct {
+typedef struct
+{
     int switchVolume;
     int newRate;
 } BolusSettings;
 
+/**
+ * @brief Abstract Driver for Fluid Delivery Driver
+ *
+ */
+class FluidDeliveryDriver
+{
+
+    virtual FluidDeliveryError *setFlowRate(int freq) = 0;
+
+    virtual void disable() = 0;
+    virtual void enable() = 0;
+
+    virtual float getDistanceFB() = 0;
+};
 
 void ControlTask(void *params);
 

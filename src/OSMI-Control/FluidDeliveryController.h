@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "OSMI-Control.h"
+#include <DRV8434S.h>
 
 class FluidDeliveryController
 {
@@ -59,14 +60,15 @@ private:
 /// @brief ESP32 Instance of a Driver.
 class ESP32PwmSpiDriver : FluidDeliveryDriver {
     public:
-        ESP32PwmSpiDriver(int chipSelectPin);
-        FluidDeliveryError setFlowRate (int freq);
+        ESP32PwmSpiDriver(int chipSelectPin, int stepPin);
+        FluidDeliveryError* setFlowRate (int freq);
         void disable();
         void enable();
 
-        int getDistanceFB();
+        float getDistanceFB();
     private:
-    int csPin;
+        int stepPin;
+        DRV8434S microStepperDriver;
 
 };
 

@@ -61,10 +61,11 @@ void ControlTask(void *params)
     }
 }
 
-ControlState::ControlState(QueueHandle_t queue, float volumePerDistance)
+ControlState::ControlState(QueueHandle_t queue, float volumePerDistance, FluidDeliveryDriver* driver)
 {
     this->queue = queue;
     this->p_Controller = FastPID(volumePerDistance, 0, 0, 2);
+    this->driver = driver;
 }
 
 QueueHandle_t ControlState::getQueue()
