@@ -9,6 +9,9 @@
 #define TIMER_DIVIDER 8
 #define TIMER_SCALE (TIMER_BASE_CLK / TIMER_DIVIDER)
 
+/// @brief  Interrupt handler for 500ms Timer
+/// @param args 
+/// @return 
 static bool IRAM_ATTR control_timer_interrupt(void *args)
 {
     BaseType_t high_task_awoken = pdFALSE;
@@ -44,6 +47,7 @@ static void tg_timer_init(QueueHandle_t *handle)
     timer_start(GROUP, TIMER);
 }
 
+
 void ControlTask(void *params)
 {
     FluidDeliveryController *state = (FluidDeliveryController *)params;
@@ -60,6 +64,8 @@ void ControlTask(void *params)
         state->handleDispatch(e);
     }
 }
+
+/*Implementation for ControlTask */
 
 ControlState::ControlState(QueueHandle_t queue, float volumePerDistance, FluidDeliveryDriver* driver)
 {
@@ -93,6 +99,7 @@ void ControlState::handleDispatch(FluidControlEvent *event)
             this->settings = ((SetDosageEvent*) event)->getSettings(); 
         case 0:
             Serial.println("Recalculating");
+            // TODO GABE call your function here.
             break;
         default:
             Serial.println("Unknown event!");

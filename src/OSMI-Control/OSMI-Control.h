@@ -59,6 +59,8 @@ class FluidDeliveryDriver
     virtual void disable() = 0;
     virtual void enable() = 0;
 
+    /// @brief Get the distance feedback from system.
+    /// @return The distance in mL
     virtual float getDistanceFB() = 0;
 };
 

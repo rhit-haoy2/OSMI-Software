@@ -5,11 +5,11 @@
 class FluidDeliveryController
 {
 public:
-    virtual bool startFlow() = 0;
-    virtual bool stopFlow() = 0;
-
     virtual void handleDispatch(FluidControlEvent *e);
     virtual QueueHandle_t getQueue() = 0;
+
+    virtual bool startFlow() = 0;
+    virtual bool stopFlow() = 0;
 
     /// @brief get the total volume delivered from the controller.
     /// @return the volume delivered in mL.
@@ -20,6 +20,7 @@ public:
 
 protected:
     QueueHandle_t queue;
+    float volumeDeliveredCache;
 };
 
 class CheckSystemEvent : FluidControlEvent
@@ -72,6 +73,7 @@ class ESP32PwmSpiDriver : FluidDeliveryDriver {
 
 };
 
+/// @brief ECE Senior Design Team 11 (2023-2024) Implementation of Control Scheme 
 class ControlState : public FluidDeliveryController
 {
 public:
@@ -85,6 +87,8 @@ public:
     bool stopFlow();
 
 private:
+    // GABE Describe your function here.
+
     FastPID p_Controller;
     BolusSettings settings;
     FluidDeliveryDriver* driver;
