@@ -1,22 +1,56 @@
 #include "OSMI-Control.h"
+#include <driver/timer.h>
+#include <freertos/queue.h>
+#include "FluidDeliveryController.h"
 
-int setChannelStatus(bool newStatus, int channelHandle, ControlState *state)
+#define GROUP timer_group_t::TIMER_GROUP_0
+#define TIMER timer_idx_t::TIMER_1
+
+#define TIMER_DIVIDER 8
+#define TIMER_SCALE (TIMER_BASE_CLK / TIMER_DIVIDER)
+
+static bool IRAM_ATTR control_timer_interrupt(void *args)
 {
-    // guard against invalid channelHandle
-    if (channelHandle != 0)
-    {
-        return 1;
-    }
+    BaseType_t high_task_awoken = pdFALSE;
 
-    return 0;
+    QueueHandle_t *control_queue = (QueueHandle_t *)args;
+
+    xQueueSendFromISR(*control_queue, new CheckSystemEvent(), &high_task_awoken);
+
+    return high_task_awoken == pdTRUE;
+}
+
+/// @brief Initialize and set GROUP : TIMER to be our periodic timer for our object to handle our dispatch.
+static void tg_timer_init(QueueHandle_t *handle)
+{
+    timer_config_t config = {
+        .alarm_en = TIMER_ALARM_EN,
+        .counter_en = TIMER_PAUSE,
+        .intr_type = TIMER_INTR_MAX,
+        .counter_dir = TIMER_COUNT_UP,
+        .auto_reload = (timer_autoreload_t)1,
+        .divider = TIMER_DIVIDER, // TODO configure so that control ticks every .5s
+
+    };
+
+    timer_init(GROUP, TIMER, &config);
+    timer_set_counter_value(GROUP, TIMER, 0);
+
+    timer_set_alarm_value(GROUP, TIMER, 1 * TIMER_SCALE);
+    timer_enable_intr(GROUP, TIMER);
+
+    timer_isr_callback_add(GROUP, TIMER, control_timer_interrupt, handle, 0);
+
+    timer_start(GROUP, TIMER);
 }
 
 void ControlTask(void *params)
 {
     FluidDeliveryController *state = (FluidDeliveryController *)params;
 
-    /**TODO Setup timer for sending an update fluid status*/
-    
+    //Setup timer for sending an update fluid status
+    QueueHandle_t handle = state->getQueue();
+    tg_timer_init(&handle);
 
     while (1)
     {
@@ -52,6 +86,18 @@ void ControlState::handleDispatch(FluidControlEvent *event)
 {
     Serial.print("Dispatching Event: ");
     Serial.println(event->getID());
+
+    switch(event->getID()) {
+        case 4:
+            this->settings = ((SetDosageEvent*) event)->getSettings(); 
+        case 0:
+            Serial.println("Recalculating");
+            break;
+        default:
+            Serial.println("Unknown event!");
+    }
+
+    free(event);
 }
 
 float ControlState::getVolumeDelivered()

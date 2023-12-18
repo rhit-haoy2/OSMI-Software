@@ -3,7 +3,6 @@
 #define __OSMI_CONTROL_H
 #include <FastPID.h>
 #include <Arduino.h>
-#include "FluidDeliveryController.h"
 
 #define STEP_EN 32
 #define STEP_DIR 33
@@ -12,21 +11,17 @@
 #define MOTOR_ENABLED 128
 #define MOTOR_DISABLED 0
 
-class ControlState : public FluidDeliveryController
+class FluidControlEvent
 {
 public:
-    ControlState(QueueHandle_t queue, float volumePerDistance);
-    QueueHandle_t getQueue();
-    void handleDispatch(FluidControlEvent *e);
-
-    float getVolumeDelivered();
-
-    bool startFlow();
-    bool stopFlow();
-
-private:
-    FastPID p_Controller;
+    virtual int getID() = 0;
 };
+
+typedef struct {
+    int switchVolume;
+    int newRate;
+} BolusSettings;
+
 
 void ControlTask(void *params);
 

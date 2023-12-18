@@ -4,6 +4,7 @@
 #include "OSMI-WIFI/OSMI-WIFI.h"
 // #include "OSMI-StepperDriver/StepperDriver.h"
 #include "driver/ledc.h"
+#include "OSMI-Control/FluidDeliveryController.h"
 
 #define DEBOUNCE_TIMER_ID 1
 #define DEBOUNCE_PRESCALE 20000
