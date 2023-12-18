@@ -58,10 +58,11 @@ void ControlTask(void *params)
 
     while (1)
     {
-        FluidControlEvent *e;
+        // FluidControlEvent *e;
 
-        xQueueReceive(state->getQueue(), e, portMAX_DELAY);
-        state->handleDispatch(e);
+        // xQueueReceive(state->getQueue(), e, portMAX_DELAY);
+        // state->handleDispatch(e);
+        delay(1000);
     }
 }
 

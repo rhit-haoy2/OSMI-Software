@@ -3,10 +3,10 @@
 
 #define ILI9341_DRIVER
 
-#define TFT_MISO 19  // (leave TFT SDO disconnected if other SPI devices share MISO)
 #define TFT_MOSI 23
+#define TFT_MISO 19  // (leave TFT SDO disconnected if other SPI devices share MISO)
 #define TFT_SCLK 18
-#define TFT_CS   22  // Chip select control  m
+#define TFT_CS   16  // Chip select control  m
 #define TFT_DC    4  // Data Command control pin
 #define TFT_RST   2  // Reset pin (could connect to RST pin)
 
