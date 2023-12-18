@@ -1,4 +1,5 @@
-lvgl/lvgl@^8.3.9
-bodmer/TFT_eSPI@^2.5.33
 bitbank2/PNGdec@^1.0.1
 mike-matera/FastPID@^1.3.1
+bodmer/TFT_eSPI@^2.5.33
+pololu/DRV8434S@^1.0.1
+lvgl/lvgl@^8.3.9

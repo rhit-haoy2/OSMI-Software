@@ -10,6 +10,8 @@
 #define DEBOUNCE_PRESCALE 20000
 #define DEBOUNCE_THRESHOLD 1000
 
+#define SPI_DRIVER_CS 5
+
 bool debouncing = false;
 hw_timer_t *debounce_timer;
 QueueHandle_t displayQueueHandle;
@@ -64,7 +66,8 @@ void setup(void)
 	motorQueueHandle = xQueueCreate(1, sizeof(int));
 	ctrlQueue = xQueueCreate(1, sizeof(int));
 
-	ControlState *controlState = new ControlState(ctrlQueue, 1);
+	FluidDeliveryDriver* driverInst = (FluidDeliveryDriver*) new ESP32PwmSpiDriver(SPI_DRIVER_CS);
+	ControlState *controlState = new ControlState(ctrlQueue, 1, driverInst);
 
 	BaseType_t cntlSuccess = xTaskCreate(ControlTask, "CNTL", 16000, controlState, 3, nullptr);
 	BaseType_t dispSuccess = xTaskCreate(DisplayTask, "DISP", 64000, &displayQueueHandle, 2, nullptr);
