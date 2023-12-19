@@ -15,7 +15,7 @@
 #define TIMER timer_idx_t::TIMER_1
 
 #define PWM_TIMER LEDC_TIMER_2
-#define PWM_SPEED LEDC_SPEED_MODE_MAX
+#define PWM_SPEED ledc_mode_t::LEDC_HIGH_SPEED_MODE
 #define PWM_CHANNEL LEDC_CHANNEL_4
 
 #define TIMER_DIVIDER 8
@@ -110,6 +110,8 @@ void ControlTask(void *params)
 
     while (1)
     {
+        Serial.print("DriverFault: ");
+        Serial.println(driver.readFault());
         // FluidControlEvent *e;
 
         // xQueueReceive(state->getQueue(), e, portMAX_DELAY);
