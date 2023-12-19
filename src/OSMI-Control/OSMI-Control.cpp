@@ -3,15 +3,27 @@
 #include <freertos/queue.h>
 #include "FluidDeliveryController.h"
 
+#include <DRV8434S.h>
+
+#include <hal/ledc_hal.h>
+#include <driver/ledc.h>
+
+#define STEPPER_CS 27
+#define STEPPER_STEP 26
+
 #define GROUP timer_group_t::TIMER_GROUP_0
 #define TIMER timer_idx_t::TIMER_1
+
+#define PWM_TIMER LEDC_TIMER_2
+#define PWM_SPEED LEDC_SPEED_MODE_MAX
+#define PWM_CHANNEL LEDC_CHANNEL_4
 
 #define TIMER_DIVIDER 8
 #define TIMER_SCALE (TIMER_BASE_CLK / TIMER_DIVIDER)
 
 /// @brief  Interrupt handler for 500ms Timer
-/// @param args 
-/// @return 
+/// @param args
+/// @return
 static bool IRAM_ATTR control_timer_interrupt(void *args)
 {
     BaseType_t high_task_awoken = pdFALSE;
@@ -47,14 +59,54 @@ static void tg_timer_init(QueueHandle_t *handle)
     timer_start(GROUP, TIMER);
 }
 
+/// @brief Setup PWM channel.
+/// Set duty to 50% of 255 (duty doesn't matter, only frequency)
+/// ESP_ERROR_CHECK(ledc_set_duty(PWM_SPEED, PWM_CHANNEL, 128));
+/// ESP_ERROR_CHECK(ledc_update_duty(PWM_SPEED, PWM_CHANNEL));
+void initPWM(void)
+{
+    const ledc_timer_config_t timerConfig = {
+        .speed_mode = PWM_SPEED,
+        .duty_resolution = LEDC_TIMER_8_BIT,
+        .timer_num = PWM_TIMER,
+        .freq_hz = 500,
+        .clk_cfg = LEDC_AUTO_CLK,
+    };
+    const ledc_channel_config_t chanConfig = {
+        .gpio_num = STEPPER_STEP,
+        .speed_mode = PWM_SPEED,
+        .channel = PWM_CHANNEL,
+        .intr_type = LEDC_INTR_DISABLE,
+        .timer_sel = PWM_TIMER,
+        .duty = 0,
+        .hpoint = 0,
+    };
+
+    ESP_ERROR_CHECK(ledc_timer_config(&timerConfig));
+    ESP_ERROR_CHECK(ledc_channel_config(&chanConfig));
+}
 
 void ControlTask(void *params)
 {
     FluidDeliveryController *state = (FluidDeliveryController *)params;
 
-    //Setup timer for sending an update fluid status
+    // Setup timer for sending an update fluid status
     QueueHandle_t handle = state->getQueue();
-    tg_timer_init(&handle);
+
+    //TODO call when ready: tg_timer_init(&handle)
+
+    DRV8434S driver = DRV8434S();
+    driver.setChipSelectPin(STEPPER_CS);
+    driver.resetSettings();
+    driver.clearFaults();
+
+    driver.setCurrentMilliamps(1000);
+    driver.enableSPIDirection();
+    driver.setDirection(0);
+    
+    initPWM();
+    ESP_ERROR_CHECK(ledc_set_duty(PWM_SPEED, PWM_CHANNEL, 128));
+    ESP_ERROR_CHECK(ledc_update_duty(PWM_SPEED, PWM_CHANNEL));
 
     while (1)
     {
@@ -68,7 +120,7 @@ void ControlTask(void *params)
 
 /*Implementation for ControlTask */
 
-ControlState::ControlState(QueueHandle_t queue, float volumePerDistance, FluidDeliveryDriver* driver)
+ControlState::ControlState(QueueHandle_t queue, float volumePerDistance, FluidDeliveryDriver *driver)
 {
     this->queue = queue;
     this->p_Controller = FastPID(volumePerDistance, 0, 0, 2);
@@ -95,15 +147,16 @@ void ControlState::handleDispatch(FluidControlEvent *event)
     Serial.print("Dispatching Event: ");
     Serial.println(event->getID());
 
-    switch(event->getID()) {
-        case 4:
-            this->settings = ((SetDosageEvent*) event)->getSettings(); 
-        case 0:
-            Serial.println("Recalculating");
-            // TODO GABE call your function here.
-            break;
-        default:
-            Serial.println("Unknown event!");
+    switch (event->getID())
+    {
+    case 4:
+        this->settings = ((SetDosageEvent *)event)->getSettings();
+    case 0:
+        Serial.println("Recalculating");
+        // TODO GABE call your function here.
+        break;
+    default:
+        Serial.println("Unknown event!");
     }
 
     free(event);
