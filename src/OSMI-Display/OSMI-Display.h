@@ -8,7 +8,6 @@
 #define AA_FONT_SMALL "NotoSansBold15"
 #define AA_FONT_LARGE "NotoSansBold36"
 
-#define ROSE_LOGO_WIDTH 510
 #define DISPLAY_VERT 320
 #define DISPLAY_HORZ 240
 
