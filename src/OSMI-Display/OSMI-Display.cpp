@@ -18,9 +18,16 @@ static lv_indev_drv_t indev_drv;
 static lv_disp_draw_buf_t draw_buffer;
 static lv_color_t disp_buf[DISPLAY_VERT * DISPLAY_HORZ / 10];
 
-static lv_obj_t *rrlabel;
-static lv_obj_t *sslabel;
+// Label for current rate.
+static lv_obj_t *rateLabel;
 
+// Label for delivering state.
+static lv_obj_t *statusLabel;
+
+/// @brief Flushes draw buffer to the display.
+/// @param disp
+/// @param area
+/// @param color_p
 void display_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
 {
     uint32_t w = (area->x2 - area->x1 + 1);
@@ -34,7 +41,8 @@ void display_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color
     lv_disp_flush_ready(disp);
 }
 
-static void btn_event_cb(lv_event_t *e)
+
+static void btn_event_Pause(lv_event_t *e)
 {
     lv_event_code_t code = lv_event_get_code(e);
     lv_obj_t *btn = lv_event_get_target(e);
@@ -46,11 +54,12 @@ static void btn_event_cb(lv_event_t *e)
         /*Get the first child of the button which is the label and change its text*/
         lv_obj_t *label = lv_obj_get_child(btn, 0);
         lv_label_set_text_fmt(label, "Stop: %d", cnt);
-        lv_label_set_text(sslabel, "It's rest.");
+        lv_label_set_text(statusLabel, "Paused");
     }
 }
 
-static void btn_event_cb3(lv_event_t *e)
+
+static void btn_event_Start(lv_event_t *e)
 {
     lv_event_code_t code = lv_event_get_code(e);
     lv_obj_t *btn = lv_event_get_target(e);
@@ -62,17 +71,18 @@ static void btn_event_cb3(lv_event_t *e)
         /*Get the first child of the button which is the label and change its text*/
         lv_obj_t *label = lv_obj_get_child(btn, 0);
         lv_label_set_text_fmt(label, "Start: %d", cnt);
-        lv_label_set_text(sslabel, "It's on!!");
+        lv_label_set_text(statusLabel, "Delivering Medication");
     }
 }
-static void btn_event2_cb(lv_event_t *e)
+
+static void btn_event_UpdateRate(lv_event_t *e)
 {
     lv_event_code_t code = lv_event_get_code(e);
     lv_obj_t *btn = lv_event_get_target(e);
     if (code == LV_EVENT_CLICKED)
     {
         lv_obj_t *label = lv_obj_get_child(btn, 0);
-        lv_label_set_text(rrlabel, lv_label_get_text(label));
+        lv_label_set_text(rateLabel, lv_label_get_text(label));
     }
 }
 
@@ -127,7 +137,10 @@ static void scroll_event_cb(lv_event_t *e)
     }
 }
 
-static void my_input_read(lv_indev_drv_t *drv, lv_indev_data_t *data)
+/// @brief Read touch input data from touchscreen.
+/// @param drv Touch driver.
+/// @param data Data for touch.
+static void touchInputRead(lv_indev_drv_t *drv, lv_indev_data_t *data)
 {
     uint16_t x, y;
     if (tft.getTouch(&x, &y))
@@ -147,6 +160,10 @@ static void my_input_read(lv_indev_drv_t *drv, lv_indev_data_t *data)
     }
 }
 
+/**
+ * @brief Get calibration data for touchscreen.
+ * @author Bodmer
+ */
 void touch_calibrate()
 {
     uint16_t calData[5];
@@ -224,14 +241,14 @@ void DisplayTask(void *params)
 
     lv_indev_drv_init(&indev_drv);          /*Basic initialization*/
     indev_drv.type = LV_INDEV_TYPE_POINTER; /*See below.*/
-    indev_drv.read_cb = my_input_read;      /*See below.*/
+    indev_drv.read_cb = touchInputRead;     /*See below.*/
     /*Register the driver in LVGL and save the created input device object*/
     my_indev = lv_indev_drv_register(&indev_drv);
 
     lv_obj_t *startbtn = lv_btn_create(lv_scr_act());
     lv_obj_set_pos(startbtn, 10, 10);  /*Set its position*/
     lv_obj_set_size(startbtn, 80, 50); /*Set its size*/
-    lv_obj_add_event_cb(startbtn, btn_event_cb3, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(startbtn, btn_event_Start, LV_EVENT_ALL, NULL);
     lv_obj_t *startbtnlabel = lv_label_create(startbtn); /*Add a label to the button*/
     lv_label_set_text(startbtnlabel, "Start");           /*Set the labels text*/
     lv_obj_center(startbtnlabel);
@@ -239,15 +256,15 @@ void DisplayTask(void *params)
     lv_obj_t *btn = lv_btn_create(lv_scr_act());                /*Add a button the current screen*/
     lv_obj_set_pos(btn, 100, 10);                               /*Set its position*/
     lv_obj_set_size(btn, 80, 50);                               /*Set its size*/
-    lv_obj_add_event_cb(btn, btn_event_cb, LV_EVENT_ALL, NULL); /*Assign a callback to the button*/
+    lv_obj_add_event_cb(btn, btn_event_Pause, LV_EVENT_ALL, NULL); /*Assign a callback to the button*/
     lv_obj_t *btnlabel = lv_label_create(btn);                  /*Add a label to the button*/
     lv_label_set_text(btnlabel, "Stop");                        /*Set the labels text*/
     lv_obj_center(btnlabel);
 
-    sslabel = lv_label_create(lv_scr_act());
-    lv_obj_set_pos(sslabel, 50, 50);
-    lv_obj_set_size(sslabel, 80, 50);
-    lv_label_set_text(sslabel, "Stages");
+    statusLabel = lv_label_create(lv_scr_act());
+    lv_obj_set_pos(statusLabel, 50, 50);
+    lv_obj_set_size(statusLabel, 80, 50);
+    lv_label_set_text(statusLabel, "Stages");
 
     lv_obj_t *cont = lv_obj_create(lv_scr_act());
     lv_obj_set_size(cont, 200, 200);
@@ -265,7 +282,7 @@ void DisplayTask(void *params)
     {
         lv_obj_t *btn = lv_btn_create(cont);
         lv_obj_set_width(btn, lv_pct(100));
-        lv_obj_add_event_cb(btn, btn_event2_cb, LV_EVENT_ALL, NULL);
+        lv_obj_add_event_cb(btn, btn_event_UpdateRate, LV_EVENT_ALL, NULL);
         lv_obj_t *label = lv_label_create(btn);
         lv_label_set_text_fmt(label, "Rate %" LV_PRIu32, i);
     }
@@ -276,10 +293,10 @@ void DisplayTask(void *params)
     /*Be sure the fist button is in the middle*/
     lv_obj_scroll_to_view(lv_obj_get_child(cont, 0), LV_ANIM_OFF);
 
-    rrlabel = lv_label_create(lv_scr_act());
-    lv_label_set_text(rrlabel, "Rate: 0");
-    lv_obj_align_to(rrlabel, cont, LV_ALIGN_OUT_BOTTOM_MID, 0, 40);
-    lv_obj_align_to(sslabel, cont, LV_ALIGN_OUT_BOTTOM_MID, 0, 30);
+    rateLabel = lv_label_create(lv_scr_act());
+    lv_label_set_text(rateLabel, "Rate: 0");
+    lv_obj_align_to(rateLabel, cont, LV_ALIGN_OUT_BOTTOM_MID, 0, 40);
+    lv_obj_align_to(statusLabel, cont, LV_ALIGN_OUT_BOTTOM_MID, 0, 30);
 
     QueueHandle_t *handle = (QueueHandle_t *)params;
     while (true)
