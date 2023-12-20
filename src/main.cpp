@@ -71,8 +71,13 @@ void setup(void)
 	FluidDeliveryDriver* driverInst = (FluidDeliveryDriver*) new ESP32PwmSpiDriver(SPI_DRIVER_CS, MOTOR_PWM_PIN);
 	ControlState *controlState = new ControlState(ctrlQueue, 1, driverInst);
 
+	display_config_t displayConfig = {
+		.controller = controlState,
+		.handle = &displayQueueHandle,
+	};
+
 	BaseType_t cntlSuccess = xTaskCreate(ControlTask, "CNTL", 16000, controlState, 3, nullptr);
-	BaseType_t dispSuccess = xTaskCreate(DisplayTask, "DISP", 64000, &displayQueueHandle, 2, nullptr);
+	BaseType_t dispSuccess = xTaskCreate(DisplayTask, "DISP", 64000, &displayConfig, 2, nullptr);
 	// BaseType_t wifiSUccess = xTaskCreate(WIFI_Task, "WIFI", 8000, nullptr, 1, nullptr);
 
 	Serial.print("Display Task Status: ");

@@ -3,6 +3,8 @@
 #define __OSMI_CONTROL_H
 #include <FastPID.h>
 #include <Arduino.h>
+#include <hal/ledc_hal.h>
+#include <driver/ledc.h>
 
 #define STEP_EN 32
 #define STEP_DIR 33
@@ -32,7 +34,7 @@ protected:
 class FluidDeliveryOK : public FluidDeliveryError
 {
 public:
-    FluidDeliveryOK() : FluidDeliveryError(0) {};
+    FluidDeliveryOK() : FluidDeliveryError(0){};
 };
 
 class FluidControlEvent
@@ -54,7 +56,8 @@ typedef struct
 class FluidDeliveryDriver
 {
 
-    virtual FluidDeliveryError *setFlowRate(int freq) = 0;
+public:
+    virtual FluidDeliveryError *setFlowRate(unsigned int freq) = 0;
 
     virtual void disable() = 0;
     virtual void enable() = 0;

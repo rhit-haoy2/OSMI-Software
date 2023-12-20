@@ -8,15 +8,9 @@
 #include <hal/ledc_hal.h>
 #include <driver/ledc.h>
 
-#define STEPPER_CS 27
-#define STEPPER_STEP 26
-
 #define GROUP timer_group_t::TIMER_GROUP_0
 #define TIMER timer_idx_t::TIMER_1
 
-#define PWM_TIMER LEDC_TIMER_2
-#define PWM_SPEED ledc_mode_t::LEDC_HIGH_SPEED_MODE
-#define PWM_CHANNEL LEDC_CHANNEL_4
 
 #define TIMER_DIVIDER 8
 #define TIMER_SCALE (TIMER_BASE_CLK / TIMER_DIVIDER)
@@ -59,33 +53,6 @@ static void tg_timer_init(QueueHandle_t *handle)
     timer_start(GROUP, TIMER);
 }
 
-/// @brief Setup PWM channel.
-/// Set duty to 50% of 255 (duty doesn't matter, only frequency)
-/// ESP_ERROR_CHECK(ledc_set_duty(PWM_SPEED, PWM_CHANNEL, 128));
-/// ESP_ERROR_CHECK(ledc_update_duty(PWM_SPEED, PWM_CHANNEL));
-void initPWM(void)
-{
-    const ledc_timer_config_t timerConfig = {
-        .speed_mode = PWM_SPEED,
-        .duty_resolution = LEDC_TIMER_8_BIT,
-        .timer_num = PWM_TIMER,
-        .freq_hz = 500,
-        .clk_cfg = LEDC_AUTO_CLK,
-    };
-    const ledc_channel_config_t chanConfig = {
-        .gpio_num = STEPPER_STEP,
-        .speed_mode = PWM_SPEED,
-        .channel = PWM_CHANNEL,
-        .intr_type = LEDC_INTR_DISABLE,
-        .timer_sel = PWM_TIMER,
-        .duty = 0,
-        .hpoint = 0,
-    };
-
-    ESP_ERROR_CHECK(ledc_timer_config(&timerConfig));
-    ESP_ERROR_CHECK(ledc_channel_config(&chanConfig));
-}
-
 void ControlTask(void *params)
 {
     FluidDeliveryController *state = (FluidDeliveryController *)params;
@@ -106,13 +73,6 @@ void ControlTask(void *params)
     // driver.setCurrentMilliamps(800, 1000);
     driver.setStepMode(DRV8434SStepMode::MicroStep16);
     driver.enableSPIDirection();
-    
-    initPWM();
-
-    ESP_ERROR_CHECK(ledc_set_duty(PWM_SPEED, PWM_CHANNEL, 128));
-    ESP_ERROR_CHECK(ledc_update_duty(PWM_SPEED, PWM_CHANNEL));
-
-    driver.enableDriver();
 
     while (1)
     {
@@ -162,6 +122,13 @@ void ControlState::handleDispatch(FluidControlEvent *event)
     {
     case 4:
         this->settings = ((SetDosageEvent *)event)->getSettings();
+        break;
+    case 1: // Start flow event
+        this->driver->enable();
+        break;
+    case -1: // Stop flow event.
+        this->driver->disable();
+        break;
     case 0:
         Serial.println("Recalculating");
         // TODO GABE call your function here.
@@ -177,4 +144,12 @@ float ControlState::getVolumeDelivered()
 {
     // TODO: Implement
     return 0;
+}
+
+void ControlState::setFlow(unsigned int rate) {
+    BolusSettings settings = {
+        .switchVolume = 0,
+        .newRate = rate,
+    };
+    xQueueSend(this->queue, new SetDosageEvent(settings), portMAX_DELAY);
 }

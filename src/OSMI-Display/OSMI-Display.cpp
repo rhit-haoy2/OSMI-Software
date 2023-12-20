@@ -6,6 +6,7 @@
 #include "TFT_Config.h"
 
 TFT_eSPI tft = TFT_eSPI();
+static FluidDeliveryController *controller;
 
 /*Input device driver descriptor*/
 static lv_indev_t *my_indev;
@@ -41,15 +42,19 @@ void display_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color
     lv_disp_flush_ready(disp);
 }
 
-
 static void btn_event_Pause(lv_event_t *e)
 {
     lv_event_code_t code = lv_event_get_code(e);
     lv_obj_t *btn = lv_event_get_target(e);
+
+    FluidDeliveryController *controllerPointer = (FluidDeliveryController *)lv_event_get_user_data(e);
     if (code == LV_EVENT_CLICKED)
     {
+        // Please get rid of count.
         static uint8_t cnt = 0;
         cnt++;
+
+        controllerPointer->stopFlow();
 
         /*Get the first child of the button which is the label and change its text*/
         lv_obj_t *label = lv_obj_get_child(btn, 0);
@@ -58,19 +63,17 @@ static void btn_event_Pause(lv_event_t *e)
     }
 }
 
-
 static void btn_event_Start(lv_event_t *e)
 {
     lv_event_code_t code = lv_event_get_code(e);
     lv_obj_t *btn = lv_event_get_target(e);
+    FluidDeliveryController *controllerPointer = (FluidDeliveryController *)lv_event_get_user_data(e);
     if (code == LV_EVENT_CLICKED)
     {
-        static uint8_t cnt = 0;
-        cnt++;
+
+        controllerPointer->startFlow();
 
         /*Get the first child of the button which is the label and change its text*/
-        lv_obj_t *label = lv_obj_get_child(btn, 0);
-        lv_label_set_text_fmt(label, "Start: %d", cnt);
         lv_label_set_text(statusLabel, "Delivering");
     }
 }
@@ -81,8 +84,13 @@ static void btn_event_UpdateRate(lv_event_t *e)
     lv_obj_t *btn = lv_event_get_target(e);
     if (code == LV_EVENT_CLICKED)
     {
-        lv_obj_t *label = lv_obj_get_child(btn, 0);
-        lv_label_set_text(rateLabel, lv_label_get_text(label));
+        if (controller != nullptr)
+        {
+            controller->stopFlow();
+            controller->setFlow(20);
+            lv_obj_t *label = lv_obj_get_child(btn, 0);
+            lv_label_set_text(rateLabel, lv_label_get_text(label));
+        }
     }
 }
 
@@ -224,6 +232,16 @@ void DisplayTask(void *params)
     uint16_t calData[5] = {531, 3290, 415, 3480, 6};
     tft.setTouch(calData);
 
+    // Setup parameters.
+    display_config_t *handle = (display_config_t *)params;
+    if (handle->controller == nullptr)
+    {
+        Serial.println("Display Controller Null!");
+        while (1)
+            ; // NUll pointer check.
+    }
+    controller = handle->controller;
+
     lv_init();
 
     lv_disp_t *disp = NULL;
@@ -248,17 +266,17 @@ void DisplayTask(void *params)
     lv_obj_t *startbtn = lv_btn_create(lv_scr_act());
     lv_obj_set_pos(startbtn, 10, 10);  /*Set its position*/
     lv_obj_set_size(startbtn, 80, 50); /*Set its size*/
-    lv_obj_add_event_cb(startbtn, btn_event_Start, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(startbtn, btn_event_Start, LV_EVENT_ALL, controller);
     lv_obj_t *startbtnlabel = lv_label_create(startbtn); /*Add a label to the button*/
     lv_label_set_text(startbtnlabel, "Start");           /*Set the labels text*/
     lv_obj_center(startbtnlabel);
 
-    lv_obj_t *btn = lv_btn_create(lv_scr_act());                /*Add a button the current screen*/
-    lv_obj_set_pos(btn, 100, 10);                               /*Set its position*/
-    lv_obj_set_size(btn, 80, 50);                               /*Set its size*/
-    lv_obj_add_event_cb(btn, btn_event_Pause, LV_EVENT_ALL, NULL); /*Assign a callback to the button*/
-    lv_obj_t *btnlabel = lv_label_create(btn);                  /*Add a label to the button*/
-    lv_label_set_text(btnlabel, "Stop");                        /*Set the labels text*/
+    lv_obj_t *btn = lv_btn_create(lv_scr_act());                         /*Add a button the current screen*/
+    lv_obj_set_pos(btn, 100, 10);                                        /*Set its position*/
+    lv_obj_set_size(btn, 80, 50);                                        /*Set its size*/
+    lv_obj_add_event_cb(btn, btn_event_Pause, LV_EVENT_ALL, controller); /*Assign a callback to the button*/
+    lv_obj_t *btnlabel = lv_label_create(btn);                           /*Add a label to the button*/
+    lv_label_set_text(btnlabel, "Stop");                                 /*Set the labels text*/
     lv_obj_center(btnlabel);
 
     statusLabel = lv_label_create(lv_scr_act());
@@ -298,7 +316,6 @@ void DisplayTask(void *params)
     lv_obj_align_to(rateLabel, cont, LV_ALIGN_OUT_BOTTOM_MID, 0, 40);
     lv_obj_align_to(statusLabel, cont, LV_ALIGN_OUT_BOTTOM_MID, 0, 30);
 
-    QueueHandle_t *handle = (QueueHandle_t *)params;
     while (true)
     {
 
