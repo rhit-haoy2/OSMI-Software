@@ -55,6 +55,7 @@ void initDebounceTimer()
 void setup(void)
 {
 	Serial.begin(115200);
+	SPI.begin();
 
 	/** Pin Interrupt Setup*/
 	initDebounceTimer();
@@ -75,7 +76,7 @@ void setup(void)
 	// BaseType_t wifiSUccess = xTaskCreate(WIFI_Task, "WIFI", 8000, nullptr, 1, nullptr);
 
 	Serial.print("Display Task Status: ");
-	Serial.println(dispSuccess);
+	// Serial.println(dispSuccess);
 }
 
 // Unused.

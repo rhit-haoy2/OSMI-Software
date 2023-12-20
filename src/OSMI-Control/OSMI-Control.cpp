@@ -96,21 +96,30 @@ void ControlTask(void *params)
     //TODO call when ready: tg_timer_init(&handle)
 
     DRV8434S driver = DRV8434S();
-    driver.setChipSelectPin(STEPPER_CS);
+    driver.setChipSelectPin(27);
+
+    delay(1);
+
     driver.resetSettings();
     driver.clearFaults();
 
-    driver.setCurrentMilliamps(1000);
+    // driver.setCurrentMilliamps(800, 1000);
+    driver.setStepMode(DRV8434SStepMode::MicroStep16);
     driver.enableSPIDirection();
-    driver.setDirection(0);
     
     initPWM();
+
     ESP_ERROR_CHECK(ledc_set_duty(PWM_SPEED, PWM_CHANNEL, 128));
     ESP_ERROR_CHECK(ledc_update_duty(PWM_SPEED, PWM_CHANNEL));
 
+    driver.enableDriver();
+
     while (1)
     {
-        Serial.print("DriverFault: ");
+        Serial.print("Settings Verification: ");
+        Serial.println(driver.verifySettings());
+
+        Serial.print("Driver Fault: ");
         Serial.println(driver.readFault());
         // FluidControlEvent *e;
 
