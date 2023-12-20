@@ -71,7 +71,7 @@ static void btn_event_Start(lv_event_t *e)
         /*Get the first child of the button which is the label and change its text*/
         lv_obj_t *label = lv_obj_get_child(btn, 0);
         lv_label_set_text_fmt(label, "Start: %d", cnt);
-        lv_label_set_text(statusLabel, "Delivering Medication");
+        lv_label_set_text(statusLabel, "Delivering");
     }
 }
 
@@ -270,12 +270,12 @@ void DisplayTask(void *params)
     lv_obj_set_size(cont, 200, 200);
     lv_obj_center(cont);
     lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
-    lv_obj_add_event_cb(cont, scroll_event_cb, LV_EVENT_SCROLL, NULL);
+    /*lv_obj_add_event_cb(cont, scroll_event_cb, LV_EVENT_SCROLL, NULL);
     lv_obj_set_style_radius(cont, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_clip_corner(cont, true, 0);
     lv_obj_set_scroll_dir(cont, LV_DIR_VER);
     lv_obj_set_scroll_snap_y(cont, LV_SCROLL_SNAP_CENTER);
-    lv_obj_set_scrollbar_mode(cont, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_set_scrollbar_mode(cont, LV_SCROLLBAR_MODE_OFF);*/
 
     uint32_t i;
     for (i = 0; i < 10; i++)
