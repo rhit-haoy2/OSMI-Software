@@ -7,9 +7,8 @@
 
 TFT_eSPI tft = TFT_eSPI();
 
-
 /*Input device driver descriptor*/
-static lv_indev_t * my_indev;
+static lv_indev_t *my_indev;
 
 /*Display Driver Descripter*/
 static lv_disp_drv_t display;
@@ -19,12 +18,8 @@ static lv_indev_drv_t indev_drv;
 static lv_disp_draw_buf_t draw_buffer;
 static lv_color_t disp_buf[DISPLAY_VERT * DISPLAY_HORZ / 10];
 
-
-static lv_obj_t * rrlabel;
-static lv_obj_t * sslabel;
-
-
-
+static lv_obj_t *rrlabel;
+static lv_obj_t *sslabel;
 
 void display_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
 {
@@ -39,58 +34,51 @@ void display_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color
     lv_disp_flush_ready(disp);
 }
 
-static void btn_event_cb(lv_event_t * e)
+static void btn_event_cb(lv_event_t *e)
 {
     lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t * btn = lv_event_get_target(e);
-    if(code == LV_EVENT_CLICKED) {
+    lv_obj_t *btn = lv_event_get_target(e);
+    if (code == LV_EVENT_CLICKED)
+    {
         static uint8_t cnt = 0;
         cnt++;
 
         /*Get the first child of the button which is the label and change its text*/
-        lv_obj_t * label = lv_obj_get_child(btn, 0);
+        lv_obj_t *label = lv_obj_get_child(btn, 0);
         lv_label_set_text_fmt(label, "Stop: %d", cnt);
         lv_label_set_text(sslabel, "It's rest.");
-
-
-        
     }
 }
 
-
-static void btn_event_cb3(lv_event_t * e)
+static void btn_event_cb3(lv_event_t *e)
 {
     lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t * btn = lv_event_get_target(e);
-    if(code == LV_EVENT_CLICKED) {
+    lv_obj_t *btn = lv_event_get_target(e);
+    if (code == LV_EVENT_CLICKED)
+    {
         static uint8_t cnt = 0;
         cnt++;
 
         /*Get the first child of the button which is the label and change its text*/
-        lv_obj_t * label = lv_obj_get_child(btn, 0);
+        lv_obj_t *label = lv_obj_get_child(btn, 0);
         lv_label_set_text_fmt(label, "Start: %d", cnt);
         lv_label_set_text(sslabel, "It's on!!");
-
-
-        
     }
 }
-static void btn_event2_cb(lv_event_t * e)
+static void btn_event2_cb(lv_event_t *e)
 {
     lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t * btn = lv_event_get_target(e);
-    if(code == LV_EVENT_CLICKED) {
-        lv_obj_t * label = lv_obj_get_child(btn, 0);
+    lv_obj_t *btn = lv_event_get_target(e);
+    if (code == LV_EVENT_CLICKED)
+    {
+        lv_obj_t *label = lv_obj_get_child(btn, 0);
         lv_label_set_text(rrlabel, lv_label_get_text(label));
     }
 }
 
-
-
-
-static void scroll_event_cb(lv_event_t * e)
+static void scroll_event_cb(lv_event_t *e)
 {
-    lv_obj_t * cont = lv_event_get_target(e);
+    lv_obj_t *cont = lv_event_get_target(e);
 
     lv_area_t cont_a;
     lv_obj_get_coords(cont, &cont_a);
@@ -99,8 +87,9 @@ static void scroll_event_cb(lv_event_t * e)
     lv_coord_t r = lv_obj_get_height(cont) * 7 / 10;
     uint32_t i;
     uint32_t child_cnt = lv_obj_get_child_cnt(cont);
-    for(i = 0; i < child_cnt; i++) {
-        lv_obj_t * child = lv_obj_get_child(cont, i);
+    for (i = 0; i < child_cnt; i++)
+    {
+        lv_obj_t *child = lv_obj_get_child(cont, i);
         lv_area_t child_a;
         lv_obj_get_coords(child, &child_a);
 
@@ -112,14 +101,16 @@ static void scroll_event_cb(lv_event_t * e)
         /*Get the x of diff_y on a circle.*/
         lv_coord_t x;
         /*If diff_y is out of the circle use the last point of the circle (the radius)*/
-        if(diff_y >= r) {
+        if (diff_y >= r)
+        {
             x = r;
         }
-        else {
+        else
+        {
             /*Use Pythagoras theorem to get x from radius and y*/
             uint32_t x_sqr = r * r - diff_y * diff_y;
             lv_sqrt_res_t res;
-            lv_sqrt(x_sqr, &res, 0x8000);   /*Use lvgl's built in sqrt root function*/
+            lv_sqrt(x_sqr, &res, 0x8000); /*Use lvgl's built in sqrt root function*/
             x = r - res.i;
         }
 
@@ -136,67 +127,71 @@ static void scroll_event_cb(lv_event_t * e)
     }
 }
 
-static void my_input_read(lv_indev_drv_t * drv, lv_indev_data_t*data){
-    uint16_t x,y;
-    if(tft.getTouch(&x,&y)){
+static void my_input_read(lv_indev_drv_t *drv, lv_indev_data_t *data)
+{
+    uint16_t x, y;
+    if (tft.getTouch(&x, &y))
+    {
         data->point.x = x;
         data->point.y = y;
         data->state = LV_INDEV_STATE_PRESSED;
-        
+
         Serial.print("x,y = ");
         Serial.print(x);
         Serial.print(",");
         Serial.println(y);
-    }else{
+    }
+    else
+    {
         data->state = LV_INDEV_STATE_RELEASED;
     }
-    
 }
-
 
 void touch_calibrate()
 {
-  uint16_t calData[5];
-  uint8_t calDataOK = 0;
+    uint16_t calData[5];
+    uint8_t calDataOK = 0;
 
-  // Calibrate
-  tft.fillScreen(TFT_BLACK);
-  tft.setCursor(20, 0);
-  tft.setTextFont(2);
-  tft.setTextSize(1);
-  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+    // Calibrate
+    tft.fillScreen(TFT_BLACK);
+    tft.setCursor(20, 0);
+    tft.setTextFont(2);
+    tft.setTextSize(1);
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);
 
-  tft.println("Touch corners as indicated");
+    tft.println("Touch corners as indicated");
 
-  tft.setTextFont(1);
-  tft.println();
+    tft.setTextFont(1);
+    tft.println();
 
-  tft.calibrateTouch(calData, TFT_MAGENTA, TFT_BLACK, 15);
+    tft.calibrateTouch(calData, TFT_MAGENTA, TFT_BLACK, 15);
 
-  Serial.println(); Serial.println();
-  Serial.println("// Use this calibration code in setup():");
-  Serial.print("  uint16_t calData[5] = ");
-  Serial.print("{ ");
+    Serial.println();
+    Serial.println();
+    Serial.println("// Use this calibration code in setup():");
+    Serial.print("  uint16_t calData[5] = ");
+    Serial.print("{ ");
 
-  for (uint8_t i = 0; i < 5; i++)
-  {
-    Serial.print(calData[i]);
-    if (i < 4) Serial.print(", ");
-  }
+    for (uint8_t i = 0; i < 5; i++)
+    {
+        Serial.print(calData[i]);
+        if (i < 4)
+            Serial.print(", ");
+    }
 
-  Serial.println(" };");
-  Serial.print("  tft.setTouch(calData);");
-  Serial.println(); Serial.println();
+    Serial.println(" };");
+    Serial.print("  tft.setTouch(calData);");
+    Serial.println();
+    Serial.println();
 
-  tft.fillScreen(TFT_BLACK);
-  
-  tft.setTextColor(TFT_GREEN, TFT_BLACK);
-  tft.println("Calibration complete!");
-  tft.println("Calibration code sent to Serial port.");
+    tft.fillScreen(TFT_BLACK);
 
-  delay(4000);
+    tft.setTextColor(TFT_GREEN, TFT_BLACK);
+    tft.println("Calibration complete!");
+    tft.println("Calibration code sent to Serial port.");
+
+    delay(4000);
 }
-
 
 void DisplayTask(void *params)
 {
@@ -207,9 +202,9 @@ void DisplayTask(void *params)
     /*END TODO*/
     tft.init();
 
-    //touch_calibrate();
+    // touch_calibrate();
 
-    uint16_t calData[5] = { 531, 3290, 415, 3480, 6 };
+    uint16_t calData[5] = {531, 3290, 415, 3480, 6};
     tft.setTouch(calData);
 
     lv_init();
@@ -227,42 +222,34 @@ void DisplayTask(void *params)
     display.draw_buf = &draw_buffer;
     lv_disp_drv_register(&display);
 
-
-    lv_indev_drv_init(&indev_drv);      /*Basic initialization*/
-    indev_drv.type = LV_INDEV_TYPE_POINTER;                /*See below.*/
-    indev_drv.read_cb = my_input_read;              /*See below.*/
+    lv_indev_drv_init(&indev_drv);          /*Basic initialization*/
+    indev_drv.type = LV_INDEV_TYPE_POINTER; /*See below.*/
+    indev_drv.read_cb = my_input_read;      /*See below.*/
     /*Register the driver in LVGL and save the created input device object*/
     my_indev = lv_indev_drv_register(&indev_drv);
 
-
-
-lv_obj_t * startbtn = lv_btn_create(lv_scr_act()); 
-    lv_obj_set_pos(startbtn, 10, 10);                            /*Set its position*/
-    lv_obj_set_size(startbtn, 80, 50);                          /*Set its size*/
+    lv_obj_t *startbtn = lv_btn_create(lv_scr_act());
+    lv_obj_set_pos(startbtn, 10, 10);  /*Set its position*/
+    lv_obj_set_size(startbtn, 80, 50); /*Set its size*/
     lv_obj_add_event_cb(startbtn, btn_event_cb3, LV_EVENT_ALL, NULL);
-    lv_obj_t * startbtnlabel = lv_label_create(startbtn);          /*Add a label to the button*/
-    lv_label_set_text(startbtnlabel, "Start");                     /*Set the labels text*/
+    lv_obj_t *startbtnlabel = lv_label_create(startbtn); /*Add a label to the button*/
+    lv_label_set_text(startbtnlabel, "Start");           /*Set the labels text*/
     lv_obj_center(startbtnlabel);
 
-    lv_obj_t * btn = lv_btn_create(lv_scr_act());     /*Add a button the current screen*/
-    lv_obj_set_pos(btn, 100, 10);                            /*Set its position*/
-    lv_obj_set_size(btn, 80, 50);                          /*Set its size*/
-    lv_obj_add_event_cb(btn, btn_event_cb, LV_EVENT_ALL, NULL);           /*Assign a callback to the button*/
-    lv_obj_t * btnlabel = lv_label_create(btn);          /*Add a label to the button*/
-    lv_label_set_text(btnlabel, "Stop");                     /*Set the labels text*/
+    lv_obj_t *btn = lv_btn_create(lv_scr_act());                /*Add a button the current screen*/
+    lv_obj_set_pos(btn, 100, 10);                               /*Set its position*/
+    lv_obj_set_size(btn, 80, 50);                               /*Set its size*/
+    lv_obj_add_event_cb(btn, btn_event_cb, LV_EVENT_ALL, NULL); /*Assign a callback to the button*/
+    lv_obj_t *btnlabel = lv_label_create(btn);                  /*Add a label to the button*/
+    lv_label_set_text(btnlabel, "Stop");                        /*Set the labels text*/
     lv_obj_center(btnlabel);
-    
-    
+
     sslabel = lv_label_create(lv_scr_act());
-    lv_obj_set_pos(sslabel,50,50);
-    lv_obj_set_size(sslabel,80,50); 
-    lv_label_set_text(sslabel, "Stages"); 
+    lv_obj_set_pos(sslabel, 50, 50);
+    lv_obj_set_size(sslabel, 80, 50);
+    lv_label_set_text(sslabel, "Stages");
 
-
-
-    
-
-    lv_obj_t * cont = lv_obj_create(lv_scr_act());
+    lv_obj_t *cont = lv_obj_create(lv_scr_act());
     lv_obj_set_size(cont, 200, 200);
     lv_obj_center(cont);
     lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
@@ -274,12 +261,13 @@ lv_obj_t * startbtn = lv_btn_create(lv_scr_act());
     lv_obj_set_scrollbar_mode(cont, LV_SCROLLBAR_MODE_OFF);
 
     uint32_t i;
-    for(i = 0; i < 10; i++) {
-        lv_obj_t * btn = lv_btn_create(cont);
+    for (i = 0; i < 10; i++)
+    {
+        lv_obj_t *btn = lv_btn_create(cont);
         lv_obj_set_width(btn, lv_pct(100));
         lv_obj_add_event_cb(btn, btn_event2_cb, LV_EVENT_ALL, NULL);
-        lv_obj_t * label = lv_label_create(btn);
-        lv_label_set_text_fmt(label, "Rate %"LV_PRIu32, i);
+        lv_obj_t *label = lv_label_create(btn);
+        lv_label_set_text_fmt(label, "Rate %" LV_PRIu32, i);
     }
 
     /*Update the buttons position manually for first*/
@@ -295,11 +283,9 @@ lv_obj_t * startbtn = lv_btn_create(lv_scr_act());
 
     QueueHandle_t *handle = (QueueHandle_t *)params;
     while (true)
-    {   
-    
+    {
+
         lv_timer_handler();
         delay(15);
     }
 }
-
-
