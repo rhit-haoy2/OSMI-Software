@@ -264,7 +264,7 @@ void DisplayTask(void *params)
     statusLabel = lv_label_create(lv_scr_act());
     lv_obj_set_pos(statusLabel, 50, 50);
     lv_obj_set_size(statusLabel, 80, 50);
-    lv_label_set_text(statusLabel, "Stages");
+    lv_label_set_text(statusLabel, "Paused");
 
     lv_obj_t *cont = lv_obj_create(lv_scr_act());
     lv_obj_set_size(cont, 200, 200);
