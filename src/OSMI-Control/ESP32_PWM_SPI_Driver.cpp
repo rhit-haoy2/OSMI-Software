@@ -8,13 +8,13 @@
 /// Set duty to 50% of 255 (duty doesn't matter, only frequency)
 /// ESP_ERROR_CHECK(ledc_set_duty(PWM_SPEED, PWM_CHANNEL, 128));
 /// ESP_ERROR_CHECK(ledc_update_duty(PWM_SPEED, PWM_CHANNEL));
-void initPWM(void)
+void ESP32PwmSpiDriver::initPWM(void)
 {
     const ledc_timer_config_t timerConfig = {
         .speed_mode = PWM_SPEED,
         .duty_resolution = LEDC_TIMER_8_BIT,
         .timer_num = PWM_TIMER,
-        .freq_hz = 500,
+        .freq_hz = DEFAULT_FREQUENCY,
         .clk_cfg = LEDC_AUTO_CLK,
     };
     const ledc_channel_config_t chanConfig = {
@@ -24,7 +24,6 @@ void initPWM(void)
         .intr_type = LEDC_INTR_DISABLE,
         .timer_sel = PWM_TIMER,
         .duty = 0,
-        .hpoint = 0,
     };
 
     ESP_ERROR_CHECK(ledc_timer_config(&timerConfig));
@@ -45,20 +44,19 @@ ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin)
 {
 
     // Setup micro stepper
-    this->microStepperDriver = DRV8434S();
-    this->microStepperDriver.setChipSelectPin(chipSelectPin);
-
-    microStepperDriver.resetSettings();
-    microStepperDriver.disableSPIStep(); // Ensure STEP pin is stepping.
-
+    microStepperDriver = new DRV8434S();
+    microStepperDriver->setChipSelectPin(chipSelectPin);
     this->stepPin = stepPin;
 
-    // Setup PWM
-    initPWM();
-    ESP_ERROR_CHECK(ledc_set_duty(PWM_SPEED, PWM_CHANNEL, 128));
-    ESP_ERROR_CHECK(ledc_update_duty(PWM_SPEED, PWM_CHANNEL));
+    delay(1); // Allow for stepper to wake up.
 
-    // Setup Pulse Counter
+    microStepperDriver->resetSettings();
+    microStepperDriver->disableSPIStep(); // Ensure STEP pin is stepping.
+
+    // Setup PWM
+    this->initPWM();
+
+    //TODO Setup Pulse Counter
 }
 
 float ESP32PwmSpiDriver::getDistanceFB()
@@ -73,7 +71,7 @@ void ESP32PwmSpiDriver::enable()
     // TODO: enable pulsecounter.
     
     // Re-enable driver.
-    microStepperDriver.enableDriver(); // Enable the driver.
+    microStepperDriver->enableDriver(); // Enable the driver.
 
     // Enable PWM.
     ESP_ERROR_CHECK(ledc_set_duty(PWM_SPEED, PWM_CHANNEL, 128));
@@ -81,6 +79,7 @@ void ESP32PwmSpiDriver::enable()
     
 }
 
+/// @brief Disable the driver.
 void ESP32PwmSpiDriver::disable()
 {
     Serial.println("IMPLEMENT ESP32::disable!");
@@ -90,7 +89,7 @@ void ESP32PwmSpiDriver::disable()
     ESP_ERROR_CHECK(ledc_update_duty(PWM_SPEED, PWM_CHANNEL)); 
 
     // Disable motor driver. Stop motor layer 2.
-    microStepperDriver.disableDriver();
+    microStepperDriver->disableDriver();
 
     // Good to stop pulse counter.
     // TODO: disable pulse counter so no erroneous flow counts.
@@ -103,7 +102,7 @@ FluidDeliveryError *ESP32PwmSpiDriver::setFlowRate(unsigned int freq)
 {
     Serial.println("IMPLEMENT ESP32::setFlowRate!");
 
-    uint8_t fault = this->microStepperDriver.readFault();
+    uint8_t fault = this->microStepperDriver->readFault();
 
 
     ESP_ERROR_CHECK(ledc_set_freq(PWM_SPEED, PWM_TIMER, freq));

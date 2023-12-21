@@ -84,7 +84,8 @@ class ESP32PwmSpiDriver : public FluidDeliveryDriver {
         float getDistanceFB();
     private:
         int stepPin;
-        DRV8434S microStepperDriver;
+        DRV8434S* microStepperDriver;
+        void initPWM(void);
 
 };
 

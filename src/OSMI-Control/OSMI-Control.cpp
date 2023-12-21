@@ -11,7 +11,6 @@
 #define GROUP timer_group_t::TIMER_GROUP_0
 #define TIMER timer_idx_t::TIMER_1
 
-
 #define TIMER_DIVIDER 8
 #define TIMER_SCALE (TIMER_BASE_CLK / TIMER_DIVIDER)
 
@@ -57,30 +56,10 @@ void ControlTask(void *params)
 {
     FluidDeliveryController *state = (FluidDeliveryController *)params;
 
-    // Setup timer for sending an update fluid status
-    QueueHandle_t handle = state->getQueue();
-
-    //TODO call when ready: tg_timer_init(&handle)
-
-    DRV8434S driver = DRV8434S();
-    driver.setChipSelectPin(27);
-
-    delay(1);
-
-    driver.resetSettings();
-    driver.clearFaults();
-
-    // driver.setCurrentMilliamps(800, 1000);
-    driver.setStepMode(DRV8434SStepMode::MicroStep16);
-    driver.enableSPIDirection();
+    // TODO call when ready: tg_timer_init(&handle) // creates 500ms time for control system re-evaluation.
 
     while (1)
     {
-        Serial.print("Settings Verification: ");
-        Serial.println(driver.verifySettings());
-
-        Serial.print("Driver Fault: ");
-        Serial.println(driver.readFault());
         // FluidControlEvent *e;
 
         // xQueueReceive(state->getQueue(), e, portMAX_DELAY);
@@ -121,13 +100,14 @@ void ControlState::handleDispatch(FluidControlEvent *event)
     switch (event->getID())
     {
     case 4:
-        this->settings = ((SetDosageEvent *)event)->getSettings();
+        settings = ((SetDosageEvent *)event)->getSettings();
+        // TODO Reset Controller.
         break;
     case 1: // Start flow event
-        this->driver->enable();
+        driver->enable();
         break;
     case -1: // Stop flow event.
-        this->driver->disable();
+        driver->disable();
         break;
     case 0:
         Serial.println("Recalculating");
@@ -146,7 +126,8 @@ float ControlState::getVolumeDelivered()
     return 0;
 }
 
-void ControlState::setFlow(unsigned int rate) {
+void ControlState::setFlow(unsigned int rate)
+{
     BolusSettings settings = {
         .switchVolume = 0,
         .newRate = rate,

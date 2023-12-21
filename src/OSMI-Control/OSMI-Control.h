@@ -45,8 +45,8 @@ public:
 
 typedef struct
 {
-    int switchVolume;
-    int newRate;
+    unsigned int switchVolume;
+    unsigned int newRate;
 } BolusSettings;
 
 /**

@@ -10,8 +10,8 @@
 #define DEBOUNCE_PRESCALE 20000
 #define DEBOUNCE_THRESHOLD 1000
 
-#define SPI_DRIVER_CS 5
-#define MOTOR_PWM_PIN 6
+#define SPI_DRIVER_CS 27
+#define MOTOR_PWM_PIN 26
 
 bool debouncing = false;
 hw_timer_t *debounce_timer;
@@ -59,6 +59,7 @@ void setup(void)
 
 	/** Pin Interrupt Setup*/
 	initDebounceTimer();
+
 	// Create Start Stop Button Interrupt.
 	pinMode(17, INPUT_PULLUP); // Set pin 17 to pullup input.
 	attachInterrupt(digitalPinToInterrupt(17), ToggleISR, RISING);
@@ -66,11 +67,16 @@ void setup(void)
 	// Create the communication lines between tasks. Usually only one number at a time.
 	displayQueueHandle = xQueueCreate(1, sizeof(int));
 	motorQueueHandle = xQueueCreate(1, sizeof(int));
-	ctrlQueue = xQueueCreate(1, sizeof(int));
+	ctrlQueue = xQueueCreate(20, sizeof(FluidControlEvent *)); // Size of 20 fluid control events.
 
-	FluidDeliveryDriver* driverInst = (FluidDeliveryDriver*) new ESP32PwmSpiDriver(SPI_DRIVER_CS, MOTOR_PWM_PIN);
-	ControlState *controlState = new ControlState(ctrlQueue, 1, driverInst);
+	FluidDeliveryDriver *driverInst = (FluidDeliveryDriver *)new ESP32PwmSpiDriver(SPI_DRIVER_CS, MOTOR_PWM_PIN); // init driver with SPI CS & PWM motor pin.
+	ControlState *controlState = new ControlState(ctrlQueue, 1, driverInst); // Setup control with the driver instance and queue.
 
+	// Turn on flow for demo.
+	controlState->setFlow(500);
+	controlState->startFlow();
+
+	// Configure display struct.
 	display_config_t displayConfig = {
 		.controller = controlState,
 		.handle = &displayQueueHandle,
@@ -79,9 +85,6 @@ void setup(void)
 	BaseType_t cntlSuccess = xTaskCreate(ControlTask, "CNTL", 16000, controlState, 3, nullptr);
 	BaseType_t dispSuccess = xTaskCreate(DisplayTask, "DISP", 64000, &displayConfig, 2, nullptr);
 	// BaseType_t wifiSUccess = xTaskCreate(WIFI_Task, "WIFI", 8000, nullptr, 1, nullptr);
-
-	Serial.print("Display Task Status: ");
-	// Serial.println(dispSuccess);
 }
 
 // Unused.
