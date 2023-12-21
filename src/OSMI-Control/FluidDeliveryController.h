@@ -111,6 +111,7 @@ private:
     FastPID p_Controller;
     BolusSettings settings;
     FluidDeliveryDriver* driver;
+    float absolutePosition;
 };
 
 #endif
