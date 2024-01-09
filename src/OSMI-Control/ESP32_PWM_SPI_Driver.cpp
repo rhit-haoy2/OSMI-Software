@@ -9,25 +9,10 @@
 /// ESP_ERROR_CHECK(ledc_set_duty(PWM_SPEED, PWM_CHANNEL, 128));
 /// ESP_ERROR_CHECK(ledc_update_duty(PWM_SPEED, PWM_CHANNEL));
 void ESP32PwmSpiDriver::initPWM(void)
-{
-    const ledc_timer_config_t timerConfig = {
-        .speed_mode = PWM_SPEED,
-        .duty_resolution = LEDC_TIMER_8_BIT,
-        .timer_num = PWM_TIMER,
-        .freq_hz = DEFAULT_FREQUENCY,
-        .clk_cfg = LEDC_AUTO_CLK,
-    };
-    const ledc_channel_config_t chanConfig = {
-        .gpio_num = STEPPER_STEP,
-        .speed_mode = PWM_SPEED,
-        .channel = PWM_CHANNEL,
-        .intr_type = LEDC_INTR_DISABLE,
-        .timer_sel = PWM_TIMER,
-        .duty = 0,
-    };
+{   
 
-    ESP_ERROR_CHECK(ledc_timer_config(&timerConfig));
-    ESP_ERROR_CHECK(ledc_channel_config(&chanConfig));
+    pinMode(STEPPER_STEP, OUTPUT);
+    analogWriteFrequency(DEFAULT_FREQUENCY);
 }
 
 void initPulseCounter(void) {
