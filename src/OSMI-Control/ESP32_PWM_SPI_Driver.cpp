@@ -11,7 +11,7 @@
 void ESP32PwmSpiDriver::initPWM(void)
 {   
 
-    pinMode(STEPPER_STEP, OUTPUT);
+    pinMode(stepPin, OUTPUT);
     analogWriteFrequency(DEFAULT_FREQUENCY);
 }
 
@@ -37,6 +37,9 @@ ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin)
 
     microStepperDriver->resetSettings();
     microStepperDriver->disableSPIStep(); // Ensure STEP pin is stepping.
+    microStepperDriver->setCurrentMilliamps(900);
+    Serial.print("Settings applied: ");
+    Serial.println(microStepperDriver->verifySettings());
 
     // Setup PWM
     this->initPWM();
@@ -59,8 +62,7 @@ void ESP32PwmSpiDriver::enable()
     microStepperDriver->enableDriver(); // Enable the driver.
 
     // Enable PWM.
-    ESP_ERROR_CHECK(ledc_set_duty(PWM_SPEED, PWM_CHANNEL, 128));
-    ESP_ERROR_CHECK(ledc_update_duty(PWM_SPEED, PWM_CHANNEL));
+    analogWrite(stepPin, 128);
     
 }
 
@@ -70,8 +72,7 @@ void ESP32PwmSpiDriver::disable()
     Serial.println("IMPLEMENT ESP32::disable!");
 
     //disable PWM. Stop motor layer 1.
-    ESP_ERROR_CHECK(ledc_set_duty(PWM_SPEED, PWM_CHANNEL, 0));
-    ESP_ERROR_CHECK(ledc_update_duty(PWM_SPEED, PWM_CHANNEL)); 
+    analogWrite(stepPin, 0);
 
     // Disable motor driver. Stop motor layer 2.
     microStepperDriver->disableDriver();

@@ -32,9 +32,8 @@ public:
     FluidDeliveryController(){};
     virtual ~FluidDeliveryController(){};
 
-protected:
     virtual void handleDispatch(FluidControlEvent *e);
-    QueueHandle_t queue;
+protected:
     float volumeDeliveredCache;
 };
 
@@ -93,7 +92,7 @@ class ESP32PwmSpiDriver : public FluidDeliveryDriver {
 class ControlState : public FluidDeliveryController
 {
 public:
-    ControlState(QueueHandle_t queue, float volumePerDistance, FluidDeliveryDriver* driverInstance);
+    ControlState(float volumePerDistance, FluidDeliveryDriver* driverInstance);
     QueueHandle_t getQueue();
 
 
@@ -103,7 +102,6 @@ public:
     bool startFlow();
     bool stopFlow();
 
-protected:
     void handleDispatch(FluidControlEvent *e);
 private:
     // GABE Describe your function here.
@@ -111,6 +109,7 @@ private:
     FastPID p_Controller;
     BolusSettings settings;
     FluidDeliveryDriver* driver;
+    QueueHandle_t queue;
     float absolutePosition;
 };
 

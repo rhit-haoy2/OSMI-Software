@@ -55,24 +55,25 @@ static void tg_timer_init(QueueHandle_t *handle)
 void ControlTask(void *params)
 {
     FluidDeliveryController *state = (FluidDeliveryController *)params;
-
     // TODO call when ready: tg_timer_init(&handle) // creates 500ms time for control system re-evaluation.
 
     while (1)
     {
-        // FluidControlEvent *e;
+        FluidControlEvent *e;
+        xQueueReceive(state->getQueue(), &e, portMAX_DELAY);
+        Serial.print("Control Task Event Address: ");
+        Serial.println((uintptr_t) e, HEX);
 
-        // xQueueReceive(state->getQueue(), e, portMAX_DELAY);
-        // state->handleDispatch(e);
+        state->handleDispatch((FluidControlEvent*) e);
         delay(1000);
     }
 }
 
 /*Implementation for ControlTask */
 
-ControlState::ControlState(QueueHandle_t queue, float volumePerDistance, FluidDeliveryDriver *driver)
+ControlState::ControlState(float volumePerDistance, FluidDeliveryDriver *driver)
 {
-    this->queue = queue;
+    this->queue =  xQueueCreate(20, sizeof(FluidControlEvent *));;
     this->p_Controller = FastPID(volumePerDistance, 0, 0, 2);
     this->driver = driver;
 }
@@ -84,12 +85,15 @@ QueueHandle_t ControlState::getQueue()
 
 bool ControlState::startFlow()
 {
-    return xQueueSend(this->queue, new StartFlowEvent(), portMAX_DELAY);
+    FluidControlEvent* e = (FluidControlEvent*) new StartFlowEvent(); //pointer on heap.
+    Serial.println((uintptr_t) e, HEX);
+    return xQueueSend(this->queue, &e, portMAX_DELAY);
 }
 
 bool ControlState::stopFlow()
 {
-    return xQueueSend(this->queue, new StopFlowEvent(), portMAX_DELAY);
+    FluidControlEvent* e = (FluidControlEvent*) new StopFlowEvent();
+    return xQueueSend(this->queue, &e, portMAX_DELAY);
 }
 
 void ControlState::handleDispatch(FluidControlEvent *event)
@@ -132,5 +136,7 @@ void ControlState::setFlow(unsigned int rate)
         .switchVolume = 0,
         .newRate = rate,
     };
-    xQueueSend(this->queue, new SetDosageEvent(settings), portMAX_DELAY);
+    FluidControlEvent *e = (FluidControlEvent*) new SetDosageEvent(settings);
+    Serial.println((uintptr_t) e, HEX);
+    xQueueSend(this->queue, &e, portMAX_DELAY);
 }
