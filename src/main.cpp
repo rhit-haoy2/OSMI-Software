@@ -72,10 +72,6 @@ void setup(void)
 	FluidDeliveryDriver *driverInst = (FluidDeliveryDriver *)new ESP32PwmSpiDriver(SPI_DRIVER_CS, MOTOR_PWM_PIN); // init driver with SPI CS & PWM motor pin.
 	ControlState *controlState = new ControlState(1, driverInst); // Setup control with the driver instance and queue.
 
-	// Turn on flow for demo.
-	controlState->setFlow(500);
-	controlState->startFlow();
-
 	// Configure display struct.
 	display_config_t displayConfig = {
 		.controller = controlState,
