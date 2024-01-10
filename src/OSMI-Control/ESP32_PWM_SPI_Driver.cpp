@@ -13,6 +13,7 @@ void ESP32PwmSpiDriver::initPWM(void)
 
     pinMode(stepPin, OUTPUT);
     analogWriteFrequency(DEFAULT_FREQUENCY);
+    analogWrite(stepPin, 0);
 }
 
 void initPulseCounter(void) {
@@ -37,7 +38,7 @@ ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin)
 
     microStepperDriver->resetSettings();
     microStepperDriver->disableSPIStep(); // Ensure STEP pin is stepping.
-    microStepperDriver->setCurrentMilliamps(900);
+    // microStepperDriver->setCurrentMilliamps(900);
     Serial.print("Settings applied: ");
     Serial.println(microStepperDriver->verifySettings());
 
@@ -60,6 +61,8 @@ void ESP32PwmSpiDriver::enable()
     
     // Re-enable driver.
     microStepperDriver->enableDriver(); // Enable the driver.
+    Serial.print("Enabling Driver: ");
+    Serial.println(microStepperDriver->verifySettings());
 
     // Enable PWM.
     analogWrite(stepPin, 128);
@@ -89,15 +92,15 @@ FluidDeliveryError *ESP32PwmSpiDriver::setFlowRate(unsigned int freq)
     Serial.println("IMPLEMENT ESP32::setFlowRate!");
 
     uint8_t fault = this->microStepperDriver->readFault();
-
-
-    ESP_ERROR_CHECK(ledc_set_freq(PWM_SPEED, PWM_TIMER, freq));
+    analogWriteFrequency(freq);
 
     FluidDeliveryError *faultWrapper = new FluidDeliveryOK();
 
     if (fault != 0)
     {
         *faultWrapper = FluidDeliveryError(fault);
+        Serial.print("Fault: ");
+        Serial.println(fault, 2);
     }
 
     return faultWrapper;

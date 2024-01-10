@@ -5,9 +5,6 @@
 #include "OSMI-Control.h"
 #include <DRV8434S.h>
 
-#define STEPPER_CS 27
-#define STEPPER_STEP 26
-
 #define PWM_TIMER LEDC_TIMER_2
 #define PWM_SPEED ledc_mode_t::LEDC_HIGH_SPEED_MODE
 #define PWM_CHANNEL LEDC_CHANNEL_4

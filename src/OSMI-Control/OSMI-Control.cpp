@@ -105,6 +105,7 @@ void ControlState::handleDispatch(FluidControlEvent *event)
     {
     case 4:
         settings = ((SetDosageEvent *)event)->getSettings();
+        driver->setFlowRate(settings.newRate);
         // TODO Reset Controller.
         break;
     case 1: // Start flow event
@@ -137,6 +138,5 @@ void ControlState::setFlow(unsigned int rate)
         .newRate = rate,
     };
     FluidControlEvent *e = (FluidControlEvent*) new SetDosageEvent(settings);
-    Serial.println((uintptr_t) e, HEX);
     xQueueSend(this->queue, &e, portMAX_DELAY);
 }
