@@ -1,29 +1,43 @@
 #include "OSMI-Control.h"
 #include "FluidDeliveryController.h"
 
-#include "hal/pcnt_hal.h"
-#include "driver/pcnt.h"
+#include <driver/pcnt.h>
 
 /// @brief Setup PWM channel.
 /// Set duty to 50% of 255 (duty doesn't matter, only frequency)
 /// ESP_ERROR_CHECK(ledc_set_duty(PWM_SPEED, PWM_CHANNEL, 128));
 /// ESP_ERROR_CHECK(ledc_update_duty(PWM_SPEED, PWM_CHANNEL));
 void ESP32PwmSpiDriver::initPWM(void)
-{   
+{
 
     pinMode(stepPin, OUTPUT);
     analogWriteFrequency(DEFAULT_FREQUENCY);
     analogWrite(stepPin, 0);
 }
 
-void initPulseCounter(void) {
+static pcnt_isr_handle_t isrHandle = NULL;
+static void IRAM_ATTR handlePCNTOverflow(void* arg) {
+    Serial.println("ESP32 PWM SPI Driver: implement PCNT Overflow.");
+}
 
-    // pcnt_unit_config_t pcntConfig = {
-    //     .low_limit = -1,
-    //     .high_limit = INT32_MAX,
-    //     .intr_priority = 0
-    // }
+void initPulseCounter(int stepPin, ESP32PwmSpiDriver *driver)
+{
 
+    pcnt_config_t config = {
+        .pulse_gpio_num = stepPin,
+        .ctrl_gpio_num = PCNT_PIN_NOT_USED,
+        .pos_mode = PCNT_COUNT_INC,
+        .neg_mode = PCNT_COUNT_DIS,
+        .counter_h_lim = (int16_t) 0xffff-1,
+        .counter_l_lim = -1,
+        .unit = DEFAULT_PCNT_UNIT,
+        .channel = PCNT_CHANNEL_0,
+    };
+
+    pcnt_unit_config(&config);
+    pcnt_counter_pause(DEFAULT_PCNT_UNIT);
+    pcnt_event_enable(DEFAULT_PCNT_UNIT, PCNT_EVT_H_LIM);
+    pcnt_isr_register(handlePCNTOverflow, &driver, 0, &isrHandle);
 }
 
 ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin)
@@ -45,20 +59,24 @@ ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin)
     // Setup PWM
     this->initPWM();
 
-    //TODO Setup Pulse Counter
+    // TODO Setup Pulse Counter
+    initPulseCounter(stepPin, this);
 }
 
 float ESP32PwmSpiDriver::getDistanceFB()
 {
     Serial.println("IMPLEMENT ESP32::getFeedback!");
-    return infinityf();
+    int16_t pulses = 0;
+    pcnt_get_counter_value(DEFAULT_PCNT_UNIT, &pulses);
+    return float(pulses);
 }
 
 void ESP32PwmSpiDriver::enable()
 {
     Serial.println("IMPLEMENT ESP32::enable!");
     // TODO: enable pulsecounter.
-    
+    pcnt_counter_resume(DEFAULT_PCNT_UNIT);
+
     // Re-enable driver.
     microStepperDriver->enableDriver(); // Enable the driver.
     Serial.print("Enabling Driver: ");
@@ -66,7 +84,6 @@ void ESP32PwmSpiDriver::enable()
 
     // Enable PWM.
     analogWrite(stepPin, 128);
-    
 }
 
 /// @brief Disable the driver.
@@ -74,14 +91,14 @@ void ESP32PwmSpiDriver::disable()
 {
     Serial.println("IMPLEMENT ESP32::disable!");
 
-    //disable PWM. Stop motor layer 1.
+    // disable PWM. Stop motor layer 1.
     analogWrite(stepPin, 0);
 
     // Disable motor driver. Stop motor layer 2.
     microStepperDriver->disableDriver();
 
     // Good to stop pulse counter.
-    // TODO: disable pulse counter so no erroneous flow counts.
+    pcnt_counter_pause(DEFAULT_PCNT_UNIT);
 }
 
 /// @brief Set the frequency of flow rate into the system in ml/minute

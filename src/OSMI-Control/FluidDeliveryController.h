@@ -8,6 +8,7 @@
 #define PWM_TIMER LEDC_TIMER_2
 #define PWM_SPEED ledc_mode_t::LEDC_HIGH_SPEED_MODE
 #define PWM_CHANNEL LEDC_CHANNEL_4
+#define DEFAULT_PCNT_UNIT PCNT_UNIT_0
 
 class FluidDeliveryController
 {
@@ -82,7 +83,6 @@ class ESP32PwmSpiDriver : public FluidDeliveryDriver {
         int stepPin;
         DRV8434S* microStepperDriver;
         void initPWM(void);
-
 };
 
 /// @brief ECE Senior Design Team 11 (2023-2024) Implementation of Control Scheme 
