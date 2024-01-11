@@ -55,7 +55,7 @@ void initDebounceTimer()
 void setup(void)
 {
 	Serial.begin(115200);
-	Serial.println("[42mOSMI Startup[0m");
+	Serial.println("[92mOSMI Startup[0m");
 	SPI.begin();
 
 	/** Pin Interrupt Setup*/
