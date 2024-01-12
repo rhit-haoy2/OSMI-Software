@@ -6,6 +6,13 @@
 #include <hal/ledc_hal.h>
 #include <driver/ledc.h>
 
+extern "C" {
+    #include "esp_partition.h"
+    #include "esp_err.h"
+    #include "nvs_flash.h"
+    #include "nvs.h"
+}
+
 #define STEP_EN 32
 #define STEP_DIR 33
 

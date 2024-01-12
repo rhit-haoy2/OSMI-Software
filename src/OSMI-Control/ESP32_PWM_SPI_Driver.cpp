@@ -16,19 +16,21 @@ void ESP32PwmSpiDriver::initPWM(void)
 }
 
 static pcnt_isr_handle_t isrHandle = NULL;
-static void IRAM_ATTR handlePCNTOverflow(void* arg) {
+
+static void IRAM_ATTR handlePCNTOverflow(void *arg)
+{
     Serial.println("ESP32 PWM SPI Driver: implement PCNT Overflow.");
 }
 
 void initPulseCounter(int stepPin, ESP32PwmSpiDriver *driver)
 {
-
+    // Config for the unit.
     pcnt_config_t config = {
         .pulse_gpio_num = stepPin,
         .ctrl_gpio_num = PCNT_PIN_NOT_USED,
         .pos_mode = PCNT_COUNT_INC,
         .neg_mode = PCNT_COUNT_DIS,
-        .counter_h_lim = (int16_t) 0xffff-1,
+        .counter_h_lim = (int16_t)0xffff - 1,
         .counter_l_lim = -1,
         .unit = DEFAULT_PCNT_UNIT,
         .channel = PCNT_CHANNEL_0,
@@ -42,6 +44,7 @@ void initPulseCounter(int stepPin, ESP32PwmSpiDriver *driver)
 
 ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin)
 {
+    countUp = true;
 
     // Setup micro stepper
     microStepperDriver = new DRV8434S();
@@ -52,7 +55,15 @@ ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin)
 
     microStepperDriver->resetSettings();
     microStepperDriver->disableSPIStep(); // Ensure STEP pin is stepping.
-    // microStepperDriver->setCurrentMilliamps(900);
+
+    uint8_t ctrl5 = microStepperDriver->getCachedReg(DRV8434SRegAddr::CTRL5);
+    ctrl5 = ctrl5 | 0x10;
+    microStepperDriver->setReg(DRV8434SRegAddr::CTRL1, ctrl5); // enable stall detection
+
+    uint8_t ctrl4 = microStepperDriver->getCachedReg(DRV8434SRegAddr::CTRL5);
+    ctrl4 = ctrl4 | 0x10;
+    microStepperDriver->setReg(DRV8434SRegAddr::CTRL1, ctrl4); // enable open load detection.
+    // todo configure step mode.
     Serial.print("Settings applied: ");
     Serial.println(microStepperDriver->verifySettings());
 
@@ -101,6 +112,45 @@ void ESP32PwmSpiDriver::disable()
     pcnt_counter_pause(DEFAULT_PCNT_UNIT);
 }
 
+bool ESP32PwmSpiDriver::occlusionDetected()
+{
+    // Measure torque
+    uint16_t torque_low = microStepperDriver->driver.readReg(DRV8434SRegAddr::CTRL8);
+    uint16_t torque_high = microStepperDriver->driver.readReg(DRV8434SRegAddr::CTRL9) & 0x0F;
+    uint16_t torque = (torque_high << 8) + torque_low;
+
+    // Get threshold if learnt.
+    uint16_t thresh_low = microStepperDriver->driver.readReg(DRV8434SRegAddr::CTRL6);
+    uint16_t thresh_high = microStepperDriver->driver.readReg(DRV8434SRegAddr::CTRL7) & 0x0F;
+    uint16_t threshold = (torque_high << 8) + torque_low;
+
+    return torque <= threshold; // Torque approaches zero as more greatly loaded.
+}
+
+FluidDeliveryError *ESP32PwmSpiDriver::checkFault() {
+    uint8_t fault = microStepperDriver->readFault();
+
+    FluidDeliveryError *faultWrapper = 0;
+
+    if (fault != 0)
+    {
+        faultWrapper = new FluidDeliveryError(fault);
+        Serial.print("Fault: ");
+        Serial.println(fault, 2);
+        return faultWrapper;
+    }
+
+    // Verify there is no occlusion.
+    if (occlusionDetected())
+    {
+        faultWrapper = new FluidDeliveryError((uint8_t) DRV8434SFaultBit::STL);
+        return faultWrapper;
+    }
+
+    faultWrapper = new FluidDeliveryOK();
+    return faultWrapper;
+}
+
 /// @brief Set the frequency of flow rate into the system in ml/minute
 /// @param freq Frequency at which mL is delivered.
 /// @return The error that was encountered when setting the value.
@@ -108,17 +158,6 @@ FluidDeliveryError *ESP32PwmSpiDriver::setFlowRate(unsigned int freq)
 {
     Serial.println("IMPLEMENT ESP32::setFlowRate!");
 
-    uint8_t fault = this->microStepperDriver->readFault();
     analogWriteFrequency(freq);
-
-    FluidDeliveryError *faultWrapper = new FluidDeliveryOK();
-
-    if (fault != 0)
-    {
-        *faultWrapper = FluidDeliveryError(fault);
-        Serial.print("Fault: ");
-        Serial.println(fault, 2);
-    }
-
-    return faultWrapper;
+    return checkFault();
 }

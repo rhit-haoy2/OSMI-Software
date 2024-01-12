@@ -81,8 +81,11 @@ class ESP32PwmSpiDriver : public FluidDeliveryDriver {
         float getDistanceFB();
     private:
         int stepPin;
+        bool countUp;
         DRV8434S* microStepperDriver;
         void initPWM(void);
+        bool occlusionDetected();
+        FluidDeliveryError *checkFault();
 };
 
 /// @brief ECE Senior Design Team 11 (2023-2024) Implementation of Control Scheme 
