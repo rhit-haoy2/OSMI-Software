@@ -58,11 +58,11 @@ ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin)
 
     uint8_t ctrl5 = microStepperDriver->getCachedReg(DRV8434SRegAddr::CTRL5);
     ctrl5 = ctrl5 | 0x10;
-    microStepperDriver->setReg(DRV8434SRegAddr::CTRL1, ctrl5); // enable stall detection
+    microStepperDriver->setReg(DRV8434SRegAddr::CTRL5, ctrl5); // enable stall detection
 
-    uint8_t ctrl4 = microStepperDriver->getCachedReg(DRV8434SRegAddr::CTRL5);
+    uint8_t ctrl4 = microStepperDriver->getCachedReg(DRV8434SRegAddr::CTRL4);
     ctrl4 = ctrl4 | 0x10;
-    microStepperDriver->setReg(DRV8434SRegAddr::CTRL1, ctrl4); // enable open load detection.
+    microStepperDriver->setReg(DRV8434SRegAddr::CTRL4, ctrl4); // enable open load detection.
     // todo configure step mode.
     Serial.print("Settings applied: ");
     Serial.println(microStepperDriver->verifySettings());
