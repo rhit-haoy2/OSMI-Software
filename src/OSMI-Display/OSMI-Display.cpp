@@ -6,7 +6,7 @@
 #include "TFT_Config.h"
 
 TFT_eSPI tft = TFT_eSPI();
-static FluidDeliveryController *controller;
+static Team11Control *controller;
 
 /*Input device driver descriptor*/
 static lv_indev_t *my_indev;
@@ -218,6 +218,8 @@ void touch_calibrate()
     delay(4000);
 }
 
+/// @brief Task function for display subsystem.
+/// @param params DisplayConfig_t
 void DisplayTask(void *params)
 {
 
@@ -234,14 +236,7 @@ void DisplayTask(void *params)
 
     // Setup parameters.
     display_config_t *handle = (display_config_t *)params;
-    if (handle->controller == nullptr)
-    {
-        Serial.println("Display Controller Null!");
-        while (1)
-            ; // NUll pointer check.
-    }
-    controller = handle->controller;
-
+    controller = new Team11Control(1, handle->driver);
     lv_init();
 
     lv_disp_t *disp = NULL;

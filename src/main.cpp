@@ -73,11 +73,11 @@ void setup(void)
 	motorQueueHandle = xQueueCreate(1, sizeof(int));
 
 	FluidDeliveryDriver *driverInst = (FluidDeliveryDriver *)new ESP32PwmSpiDriver(SPI_DRIVER_CS, MOTOR_PWM_PIN, LIMIT_SWITCH_PIN, DIST_PER_STEP); // init driver with SPI CS & PWM motor pin.
-	FluidDeliveryController *controlState = new Team11Control(1, driverInst); // Setup control with the driver instance and queue.
+	  // Setup control with the driver instance and queue.
 
 	// Configure display struct.
 	display_config_t displayConfig = {
-		.controller = controlState,
+		.driver = driverInst,
 		.handle = &displayQueueHandle,
 	};
 
