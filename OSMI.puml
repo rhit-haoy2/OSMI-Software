@@ -1,0 +1,52 @@
+@startuml
+together {
+class DisplayTask {}
+class ControlWatchdogTask {}
+}
+
+interface FluidController {
++  void start()
++  void pause()
++  void reset()
+
++  float getVolumeDelivered()
+
++  float setBolusRate(float flowRate, float bolusDosage)
++  float setDosageRate(float flowRate, float finalDosage)
+
+
+}
+
+interface FluidDriver {
+  +void enable()
+  +void disable()
+
+  +void setVelocity(float mmPerSecond)
+  +float getDistanceMM()
+
+  +void setDirection(direction_t direction)
+
+  +int getStatus()
+  +bool occlusionDetected()
+
+}
+
+
+FluidController -> FluidDriver
+
+class Team11Controller {}
+class Esp32PwmSpiDriver {
+- unsigned long stepOverflowCount
+- void initPWM()
+- void initPulseCounter()
+
+}
+
+DisplayTask -[hidden]--> ControlWatchdogTask
+
+Team11Controller -UP-|> FluidController
+Esp32PwmSpiDriver -UP-|> FluidDriver
+
+ControlWatchdogTask -> "*" FluidController
+DisplayTask -> "*" FluidController
+@enduml
