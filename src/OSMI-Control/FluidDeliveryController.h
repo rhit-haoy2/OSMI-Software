@@ -1,8 +1,9 @@
 #ifndef _FLUID_DELIVERY_CONTROLLER_H_
-#define  _FLUID_DELIVERY_CONTROLLER_H_
+#define _FLUID_DELIVERY_CONTROLLER_H_
 
 #include <Arduino.h>
 #include "OSMI-Control.h"
+#include <esp_log.h>
 #include <DRV8434S.h>
 
 #define PWM_TIMER LEDC_TIMER_2
@@ -10,107 +11,72 @@
 #define PWM_CHANNEL LEDC_CHANNEL_4
 #define DEFAULT_PCNT_UNIT PCNT_UNIT_0
 
-class FluidDeliveryController
+typedef enum
 {
-public:
-    virtual QueueHandle_t getQueue() = 0;
+    limitStopped = -1,
+    Stopped = 0,
+    Moving = 1,
+    Reversed = 2,
 
-    virtual bool startFlow() = 0;
-    virtual bool stopFlow() = 0;
-
-    
-    /// @brief Set fluid tick rate
-    /// @param flowRate flow rate in ml/min
-    virtual void setFlow(unsigned int flowRate);
-
-    /// @brief get the total volume delivered from the controller.
-    /// @return the volume delivered in mL.
-    virtual float getVolumeDelivered() = 0;
-
-    FluidDeliveryController(){};
-    virtual ~FluidDeliveryController(){};
-
-    virtual void handleDispatch(FluidControlEvent *e);
-protected:
-    float volumeDeliveredCache;
-};
-
-class CheckSystemEvent : FluidControlEvent
-{
-public:
-    int getID();
-};
-
-class StartFlowEvent : FluidControlEvent
-{
-public:
-    int getID();
-};
-
-class StopFlowEvent : FluidControlEvent
-{
-public:
-    int getID();
-};
-
-class SetDosageEvent : FluidControlEvent
-{
-public:
-    SetDosageEvent(BolusSettings settings) { this->settings = settings; }
-    int getID()
-    {
-        return 4;
-    };
-    BolusSettings getSettings()
-    {
-        return this->settings;
-    }
-
-private:
-    BolusSettings settings;
-};
+} EspDriverStatus_t;
 
 /// @brief ESP32 Instance of a Driver.
-class ESP32PwmSpiDriver : public FluidDeliveryDriver {
-    public:
-        ESP32PwmSpiDriver(int chipSelectPin, int stepPin);
-        FluidDeliveryError* setFlowRate (unsigned int freq);
-        void disable();
-        void enable();
-
-        float getDistanceFB();
-    private:
-        int stepPin;
-        bool countUp;
-        DRV8434S* microStepperDriver;
-        void initPWM(void);
-        bool occlusionDetected();
-        FluidDeliveryError *checkFault();
-};
-
-/// @brief ECE Senior Design Team 11 (2023-2024) Implementation of Control Scheme 
-class ControlState : public FluidDeliveryController
+class ESP32PwmSpiDriver : public FluidDeliveryDriver
 {
 public:
-    ControlState(float volumePerDistance, FluidDeliveryDriver* driverInstance);
-    QueueHandle_t getQueue();
+    ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin, float distancePerStepMm);
 
+    float getDistanceMm(void);
+    float getDistanceSteps(void);
 
-    float getVolumeDelivered();
-    void setFlow(unsigned int flowRate);
+    int setVelocity(float mmPerMinute);
+    int getStatus(void);
 
-    bool startFlow();
-    bool stopFlow();
+    void disable();
+    void enable(void);
 
-    void handleDispatch(FluidControlEvent *e);
+    void setDirection(direction_t direction);
+    bool occlusionDetected(void);
+
+    void disableInIsr();
+    void setStepsInIsr(unsigned long long steps);
+
 private:
-    // GABE Describe your function here.
+    int stepPin;
+    int stopPin;
+    float distancePerStepMm;
+    unsigned long long distanceSteps;
+    EspDriverStatus_t status;
+    direction_t direction;
+    DRV8434S microStepperDriver;
+    void initPWM(void);
+    void initPulseCounter(void);
+};
+
+/// @brief ECE Senior Design Team 11 (2023-2024) Implementation of Control Scheme
+class Team11Control : public FluidDeliveryController
+{
+public:
+    Team11Control(float volumePerDistance, FluidDeliveryDriver *driverInstance);
+
+    bool startFlow(void);
+    bool stopFlow(void);
+
+    void reverse(void);
+
+    void setFlow(float flowRateMlPerMin);
+    void setVolumetricConversion(float mlPerMm);
+
+    float getVolumeDelivered(void);
+    int getStatus(void) { return state; };
+
+private:
+    // Gabe, Describe your function here.
 
     FastPID p_Controller;
-    BolusSettings settings;
-    FluidDeliveryDriver* driver;
-    QueueHandle_t queue;
+    FluidDeliveryDriver *driver;
     float absolutePosition;
+    int state;
 };
 
 #endif

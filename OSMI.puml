@@ -1,18 +1,20 @@
 @startuml OSMI Design
-together {
-class DisplayTask {}
-class ControlWatchdogTask {}
+class DisplayTask {
+  - void update()
 }
-
+' class ControlWatchdogTask {}
 interface FluidController {
-+  void start()
-+  void pause()
-+  void reset()
+  +  void start()
+  +  void pause()
+  +  void reset()
 
-+  float getVolumeDelivered()
+  +  void reverse()
+  +  float getVolumeDelivered()
 
-+  float setBolusRate(float flowRate, float bolusDosage)
-+  float setDosageRate(float flowRate, float finalDosage)
+  +  float setBolusRate(float flowRate, float bolusDosage)
+  +  float setDosageRate(float flowRate, float finalDosage)
+
+  + int getStatus()
 
 
 }
@@ -31,22 +33,24 @@ interface FluidDriver {
 
 }
 
-
 FluidController -> FluidDriver
 
-class Team11Controller {}
-class Esp32PwmSpiDriver {
-- unsigned long stepOverflowCount
-- void initPWM()
-- void initPulseCounter()
-
+class Team11Controller {
+  - float syringeVolumePerStep
 }
 
-DisplayTask -[hidden]--> ControlWatchdogTask
+class Esp32PwmSpiDriver {
+  - unsigned long long travelMaximum
+  - unsigned long stepOverflowCount
+  - void initPWM()
+  - void initPulseCounter()
+}
+
+' DisplayTask -[hidden]--> ControlWatchdogTask
 
 Team11Controller -UP-|> FluidController
 Esp32PwmSpiDriver -UP-|> FluidDriver
 
-ControlWatchdogTask -> "*" FluidController
-DisplayTask -> "*" FluidController
+' ControlWatchdogTask -> "*" FluidController
+DisplayTask -RIGHT-> "*" FluidController
 @enduml

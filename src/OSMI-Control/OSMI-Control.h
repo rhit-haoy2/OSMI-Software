@@ -6,55 +6,53 @@
 #include <hal/ledc_hal.h>
 #include <driver/ledc.h>
 
-extern "C" {
-    #include "esp_partition.h"
-    #include "esp_err.h"
-    #include "nvs_flash.h"
-    #include "nvs.h"
+extern "C"
+{
+#include "esp_partition.h"
+#include "esp_err.h"
+#include "nvs_flash.h"
+#include "nvs.h"
 }
 
-#define STEP_EN 32
-#define STEP_DIR 33
-
-#define DEFAULT_FREQUENCY 100
 #define MOTOR_ENABLED 128
 #define MOTOR_DISABLED 0
 
-class FluidDeliveryError
-{
-public:
-    FluidDeliveryError(int fault)
-    {
-        this->fault = fault;
-    };
+typedef enum {
+    Depress,
+    Reverse,
+} direction_t;
 
-    int getID()
-    {
-        return fault;
-    };
+void ControlWatchdogTask();
 
-protected:
-    int fault;
-};
-
-/***/
-class FluidDeliveryOK : public FluidDeliveryError
-{
-public:
-    FluidDeliveryOK() : FluidDeliveryError(0){};
-};
-
-class FluidControlEvent
-{
-public:
-    virtual int getID() = 0;
-};
-
-typedef struct
+struct
 {
     unsigned int switchVolume;
     unsigned int newRate;
 } BolusSettings;
+
+class FluidDeliveryController
+{
+public:
+
+    virtual bool startFlow() = 0;
+    virtual bool stopFlow() = 0;
+
+    /// @brief Reverse the direction of the flow.
+    virtual void reverse() = 0;
+
+    /// @brief Set fluid flow rate in milliliter per minute
+    /// @param flowRate flow rate in mL/min
+    virtual void setFlow(float flowRateMlPerMin) = 0;
+
+    /// @brief get the total volume delivered from the controller.
+    /// @return the volume delivered in mL.
+    virtual float getVolumeDelivered() = 0;
+    
+    /// @brief Get the current status of the controller whether it's delivering, moving start/stopping.
+    /// @return 
+    virtual int getStatus() = 0;
+
+};
 
 /**
  * @brief Abstract Driver for Fluid Delivery Driver
@@ -64,16 +62,25 @@ class FluidDeliveryDriver
 {
 
 public:
-    virtual FluidDeliveryError *setFlowRate(unsigned int freq) = 0;
+    /// @brief Get the distance feedback from system.
+    /// @return The distance in mm
+    virtual float getDistanceMm() = 0;
+
+    /// @brief Set the velocity of travel.
+    /// @param mmPerMinute Speed at which to move.
+    /// @return Success
+    virtual int setVelocity(float mmPerMinute) = 0;
+    virtual int getStatus() = 0;
 
     virtual void disable() = 0;
     virtual void enable() = 0;
 
-    /// @brief Get the distance feedback from system.
-    /// @return The distance in mL
-    virtual float getDistanceFB() = 0;
-};
+    virtual void setDirection(direction_t direction) = 0;
 
-void ControlTask(void *params);
+    bool occlusionDetected() {
+        return false;
+    }
+
+};
 
 #endif

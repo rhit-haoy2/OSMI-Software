@@ -14,129 +14,36 @@
 #define TIMER_DIVIDER 8
 #define TIMER_SCALE (TIMER_BASE_CLK / TIMER_DIVIDER)
 
-/// @brief  Interrupt handler for 500ms Timer
-/// @param args
-/// @return
-static bool IRAM_ATTR control_timer_interrupt(void *args)
-{
-    BaseType_t high_task_awoken = pdFALSE;
-
-    QueueHandle_t *control_queue = (QueueHandle_t *)args;
-
-    xQueueSendFromISR(*control_queue, new CheckSystemEvent(), &high_task_awoken);
-
-    return high_task_awoken == pdTRUE;
-}
-
-/// @brief Initialize and set GROUP : TIMER to be our periodic timer for our object to handle our dispatch.
-static void tg_timer_init(QueueHandle_t *handle)
-{
-    timer_config_t config = {
-        .alarm_en = TIMER_ALARM_EN,
-        .counter_en = TIMER_PAUSE,
-        .intr_type = TIMER_INTR_MAX,
-        .counter_dir = TIMER_COUNT_UP,
-        .auto_reload = (timer_autoreload_t)1,
-        .divider = TIMER_DIVIDER, // TODO configure so that control ticks every .5s
-
-    };
-
-    timer_init(GROUP, TIMER, &config);
-    timer_set_counter_value(GROUP, TIMER, 0);
-
-    timer_set_alarm_value(GROUP, TIMER, 1 * TIMER_SCALE);
-    timer_enable_intr(GROUP, TIMER);
-
-    timer_isr_callback_add(GROUP, TIMER, control_timer_interrupt, handle, 0);
-
-    timer_start(GROUP, TIMER);
-}
-
-void ControlTask(void *params)
-{
-    FluidDeliveryController *state = (FluidDeliveryController *)params;
-    // TODO call when ready: tg_timer_init(&handle) // creates 500ms time for control system re-evaluation.
-
-    while (1)
-    {
-        FluidControlEvent *e;
-        xQueueReceive(state->getQueue(), &e, portMAX_DELAY);
-        Serial.print("Control Task Event Address: ");
-        Serial.println((uintptr_t) e, HEX);
-
-        state->handleDispatch((FluidControlEvent*) e);
-        delay(1000);
-    }
-}
-
 /*Implementation for ControlTask */
 
-ControlState::ControlState(float volumePerDistance, FluidDeliveryDriver *driver)
+Team11Control::Team11Control(float volumePerDistance, FluidDeliveryDriver *driver)
 {
-    this->queue =  xQueueCreate(20, sizeof(FluidControlEvent *));;
     this->p_Controller = FastPID(volumePerDistance, 0, 0, 2);
     this->driver = driver;
 }
 
-QueueHandle_t ControlState::getQueue()
+bool Team11Control::startFlow()
 {
-    return this->queue;
+    driver->enable();
+    return true;
 }
 
-bool ControlState::startFlow()
+bool Team11Control::stopFlow()
 {
-    FluidControlEvent* e = (FluidControlEvent*) new StartFlowEvent(); //pointer on heap.
-    Serial.println((uintptr_t) e, HEX);
-    return xQueueSend(this->queue, &e, portMAX_DELAY);
+    driver->disable();
+    return true;
 }
 
-bool ControlState::stopFlow()
+void Team11Control::reverse(void)
 {
-    FluidControlEvent* e = (FluidControlEvent*) new StopFlowEvent();
-    return xQueueSend(this->queue, &e, portMAX_DELAY);
 }
 
-void ControlState::handleDispatch(FluidControlEvent *event)
+void Team11Control::setFlow(float flowRateMlPerMin)
 {
-    Serial.print("Dispatching Event: ");
-    Serial.println(event->getID());
-
-    switch (event->getID())
-    {
-    case 4:
-        settings = ((SetDosageEvent *)event)->getSettings();
-        driver->setFlowRate(settings.newRate);
-        // TODO Reset Controller.
-        break;
-    case 1: // Start flow event
-        driver->enable();
-        break;
-    case -1: // Stop flow event.
-        driver->disable();
-        break;
-    case 0:
-        Serial.println("Recalculating");
-        // TODO GABE call your function here.
-        break;
-    default:
-        Serial.println("Unknown event!");
-    }
-
-    free(event);
 }
 
-float ControlState::getVolumeDelivered()
+float Team11Control::getVolumeDelivered()
 {
     // TODO: Implement
     return 0;
-}
-
-void ControlState::setFlow(unsigned int rate)
-{
-    BolusSettings settings = {
-        .switchVolume = 0,
-        .newRate = rate,
-    };
-    FluidControlEvent *e = (FluidControlEvent*) new SetDosageEvent(settings);
-    xQueueSend(this->queue, &e, portMAX_DELAY);
 }
