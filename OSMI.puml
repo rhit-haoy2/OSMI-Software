@@ -1,4 +1,4 @@
-@startuml
+@startuml OSMI Design
 together {
 class DisplayTask {}
 class ControlWatchdogTask {}
