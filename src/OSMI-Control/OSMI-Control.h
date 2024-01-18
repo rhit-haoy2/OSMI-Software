@@ -76,6 +76,7 @@ public:
     virtual void enable() = 0;
 
     virtual void setDirection(direction_t direction) = 0;
+    virtual direction_t getDirection(void) = 0;
 
     bool occlusionDetected() {
         return false;

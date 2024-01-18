@@ -36,6 +36,7 @@ public:
     void enable(void);
 
     void setDirection(direction_t direction);
+    direction_t getDirection(void);
     bool occlusionDetected(void);
 
     void disableInIsr();
@@ -58,6 +59,7 @@ class Team11Control : public FluidDeliveryController
 {
 public:
     Team11Control(float volumePerDistance, FluidDeliveryDriver *driverInstance);
+    ~Team11Control();
 
     bool startFlow(void);
     bool stopFlow(void);
@@ -70,12 +72,15 @@ public:
     float getVolumeDelivered(void);
     int getStatus(void) { return state; };
 
-private:
     // Gabe, Describe your function here.
+
+
+private:
+    // Task Handle here.    
 
     FastPID p_Controller;
     FluidDeliveryDriver *driver;
-    float absolutePosition;
+    float volumePerDistance;
     int state;
 };
 

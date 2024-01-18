@@ -130,6 +130,7 @@ void ESP32PwmSpiDriver::enable()
 
     // Enable PWM.
     analogWrite(stepPin, 128);
+    this->status = EspDriverStatus_t::Moving;
 }
 
 /// @brief Disable the driver.
@@ -145,6 +146,7 @@ void ESP32PwmSpiDriver::disable()
 
     // Good to stop pulse counter.
     pcnt_counter_pause(DEFAULT_PCNT_UNIT);
+    this->status = EspDriverStatus_t::Stopped;
 }
 
 void ESP32PwmSpiDriver::setDirection(direction_t direction)
@@ -160,6 +162,11 @@ void ESP32PwmSpiDriver::setDirection(direction_t direction)
     default:
         microStepperDriver.setDirection(true);
     }
+}
+
+direction_t ESP32PwmSpiDriver::getDirection(void)
+{
+    return this->direction;
 }
 
 bool ESP32PwmSpiDriver::occlusionDetected()
@@ -190,6 +197,9 @@ void ESP32PwmSpiDriver::setStepsInIsr(unsigned long long steps)
 
 int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
 {
+    if(this->status == Moving) {
+        return -1; // dont change speed while moving. may need to change.
+    }
     ESP_LOGD(TAG, "Setting Velocity: %.1f%%", mmPerMinute);
 
     int stepPerSecond = lrint(mmPerMinute * 60 / distancePerStepMm);
