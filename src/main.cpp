@@ -2,6 +2,7 @@
 #include "OSMI-Display/OSMI-Display.h"
 #include "OSMI-Control/OSMI-Control.h"
 #include "OSMI-WIFI/OSMI-WIFI.h"
+#include "OSMI-SelfStart/SelfStart.h"
 // #include "OSMI-StepperDriver/StepperDriver.h"
 #include "driver/ledc.h"
 #include "OSMI-Control/FluidDeliveryController.h"
@@ -81,6 +82,7 @@ void setup(void)
 		.handle = &displayQueueHandle,
 	};
 
+	//BaseType_t TestSuccess = xTaskCreate(SelfStartTestTask, "DISP", 64000, &displayConfig, 2, nullptr);
 	BaseType_t dispSuccess = xTaskCreate(DisplayTask, "DISP", 64000, &displayConfig, 2, nullptr);
 	// BaseType_t wifiSUccess = xTaskCreate(WIFI_Task, "WIFI", 8000, nullptr, 1, nullptr);
 }
