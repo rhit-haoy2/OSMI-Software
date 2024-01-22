@@ -25,6 +25,11 @@ static lv_obj_t *rateLabel;
 // Label for delivering state.
 static lv_obj_t *statusLabel;
 
+// Parameter of the rate.
+int flowrate;
+int unit;
+
+
 /// @brief Flushes draw buffer to the display.
 /// @param disp
 /// @param area
@@ -47,18 +52,13 @@ static void btn_event_Pause(lv_event_t *e)
     lv_event_code_t code = lv_event_get_code(e);
     lv_obj_t *btn = lv_event_get_target(e);
 
-    FluidDeliveryController *controllerPointer = (FluidDeliveryController *)lv_event_get_user_data(e);
     if (code == LV_EVENT_CLICKED)
     {
-        // Please get rid of count.
-        static uint8_t cnt = 0;
-        cnt++;
 
-        controllerPointer->stopFlow();
+        controller->stopFlow();
 
         /*Get the first child of the button which is the label and change its text*/
         lv_obj_t *label = lv_obj_get_child(btn, 0);
-        lv_label_set_text_fmt(label, "Stop: %d", cnt);
         lv_label_set_text(statusLabel, "Paused");
     }
 }
@@ -67,83 +67,101 @@ static void btn_event_Start(lv_event_t *e)
 {
     lv_event_code_t code = lv_event_get_code(e);
     lv_obj_t *btn = lv_event_get_target(e);
-    FluidDeliveryController *controllerPointer = (FluidDeliveryController *)lv_event_get_user_data(e);
     if (code == LV_EVENT_CLICKED)
     {
 
-        controllerPointer->startFlow();
+        controller->startFlow();
 
         /*Get the first child of the button which is the label and change its text*/
         lv_label_set_text(statusLabel, "Delivering");
     }
 }
 
-static void btn_event_UpdateRate(lv_event_t *e)
+static void UpdateFlowText(){
+    //controller->stopFlow();
+    std::string flowtext = "Rate: ";
+    char num[5];
+    std:sprintf(num,"%d ",flowrate);
+    flowtext += num;
+    switch(unit){
+        case 0:
+            flowtext+="ml/sec";
+            break;
+        case 1:
+            flowtext+="ml/min";
+            break;
+        case 2:
+            flowtext+="ml/h";
+            break;
+        default:
+            flowtext+="ml/sec";
+            break;
+    }
+    lv_label_set_text(rateLabel, flowtext.c_str());
+}
+
+// static void btn_event_UpdateRate(lv_event_t *e)
+// {
+//     lv_event_code_t code = lv_event_get_code(e);
+//     lv_obj_t *btn = lv_event_get_target(e);
+//     if (code == LV_EVENT_CLICKED)
+//     {
+//         if (controller != nullptr)
+//         {
+//             controller->stopFlow();
+//             controller->setFlow(20);
+//             lv_obj_t *label = lv_obj_get_child(btn, 0);
+//             lv_label_set_text(rateLabel, lv_label_get_text(label));
+//         }
+//     }
+// }
+
+
+
+static void roller_event_UpdateRateHun(lv_event_t * e)
 {
     lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t *btn = lv_event_get_target(e);
-    if (code == LV_EVENT_CLICKED)
-    {
-        if (controller != nullptr)
-        {
-            controller->stopFlow();
-            controller->setFlow(20);
-            lv_obj_t *label = lv_obj_get_child(btn, 0);
-            lv_label_set_text(rateLabel, lv_label_get_text(label));
-        }
+    lv_obj_t * obj = lv_event_get_target(e);
+    if(code == LV_EVENT_VALUE_CHANGED) {
+        int hundreds= lv_roller_get_selected(obj);
+        flowrate = (flowrate%100) + (hundreds*100);
+        UpdateFlowText();
     }
 }
 
-static void scroll_event_cb(lv_event_t *e)
+static void roller_event_UpdateRateTen(lv_event_t * e)
 {
-    lv_obj_t *cont = lv_event_get_target(e);
-
-    lv_area_t cont_a;
-    lv_obj_get_coords(cont, &cont_a);
-    lv_coord_t cont_y_center = cont_a.y1 + lv_area_get_height(&cont_a) / 2;
-
-    lv_coord_t r = lv_obj_get_height(cont) * 7 / 10;
-    uint32_t i;
-    uint32_t child_cnt = lv_obj_get_child_cnt(cont);
-    for (i = 0; i < child_cnt; i++)
-    {
-        lv_obj_t *child = lv_obj_get_child(cont, i);
-        lv_area_t child_a;
-        lv_obj_get_coords(child, &child_a);
-
-        lv_coord_t child_y_center = child_a.y1 + lv_area_get_height(&child_a) / 2;
-
-        lv_coord_t diff_y = child_y_center - cont_y_center;
-        diff_y = LV_ABS(diff_y);
-
-        /*Get the x of diff_y on a circle.*/
-        lv_coord_t x;
-        /*If diff_y is out of the circle use the last point of the circle (the radius)*/
-        if (diff_y >= r)
-        {
-            x = r;
-        }
-        else
-        {
-            /*Use Pythagoras theorem to get x from radius and y*/
-            uint32_t x_sqr = r * r - diff_y * diff_y;
-            lv_sqrt_res_t res;
-            lv_sqrt(x_sqr, &res, 0x8000); /*Use lvgl's built in sqrt root function*/
-            x = r - res.i;
-        }
-
-        /*Translate the item by the calculated X coordinate*/
-        lv_obj_set_style_translate_x(child, x, 0);
-
-        /*Use some opacity with larger translations*/
-        lv_opa_t opa = lv_map(x, 0, r, LV_OPA_TRANSP, LV_OPA_COVER);
-        lv_obj_set_style_opa(child, LV_OPA_COVER - opa, 0);
-
-        /*if(x==0){
-          lv_label_set_text(rrlabel, lv_label_get_text(lv_obj_get_child(child,0)));
-        }*/
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t * obj = lv_event_get_target(e);
+    if(code == LV_EVENT_VALUE_CHANGED) {
+        int tens= lv_roller_get_selected(obj);
+        flowrate = ((flowrate/100)*100)+ tens*10 + (flowrate%10);
+        UpdateFlowText();
     }
 }
+
+static void roller_event_UpdateRateOne(lv_event_t * e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t * obj = lv_event_get_target(e);
+    if(code == LV_EVENT_VALUE_CHANGED) {
+        int ones= lv_roller_get_selected(obj);
+        flowrate = ((flowrate/10)*10) + ones;
+        UpdateFlowText();
+    }
+}
+
+static void roller_event_UpdateRateUnit(lv_event_t * e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t * obj = lv_event_get_target(e);
+    if(code == LV_EVENT_VALUE_CHANGED) {
+        unit = lv_roller_get_selected(obj);
+        Serial.println(flowrate);
+        UpdateFlowText();
+    }
+}
+
 
 /// @brief Read touch input data from touchscreen.
 /// @param drv Touch driver.
@@ -156,11 +174,6 @@ static void touchInputRead(lv_indev_drv_t *drv, lv_indev_data_t *data)
         data->point.x = x;
         data->point.y = y;
         data->state = LV_INDEV_STATE_PRESSED;
-
-        Serial.print("x,y = ");
-        Serial.print(x);
-        Serial.print(",");
-        Serial.println(y);
     }
     else
     {
@@ -237,6 +250,10 @@ void DisplayTask(void *params)
     // Setup parameters.
     display_config_t *handle = (display_config_t *)params;
     controller = new Team11Control(1, handle->driver);
+    Serial.printf("HandleDispAddress: %p\n", handle);
+    Serial.printf("DriverDispAddress: %p\n", handle->driver);
+    Serial.printf("QueueDispAddress: %p\n", handle->handle);
+
     lv_init();
 
     lv_disp_t *disp = NULL;
@@ -258,6 +275,11 @@ void DisplayTask(void *params)
     /*Register the driver in LVGL and save the created input device object*/
     my_indev = lv_indev_drv_register(&indev_drv);
 
+    flowrate =  0;
+    unit = 0;
+
+
+
     lv_obj_t *startbtn = lv_btn_create(lv_scr_act());
     lv_obj_set_pos(startbtn, 10, 10);  /*Set its position*/
     lv_obj_set_size(startbtn, 80, 50); /*Set its size*/
@@ -274,43 +296,46 @@ void DisplayTask(void *params)
     lv_label_set_text(btnlabel, "Stop");                                 /*Set the labels text*/
     lv_obj_center(btnlabel);
 
+
+    
+
+
+    const char * opts = "0\n1\n2\n3\n4\n5\n6\n7\n8\n9";
+    lv_obj_t* roller100 = lv_roller_create(lv_scr_act());
+    lv_roller_set_options(roller100, opts, LV_ROLLER_MODE_INFINITE);
+    lv_roller_set_visible_row_count(roller100, 3);
+    lv_obj_align(roller100, LV_ALIGN_LEFT_MID, 10, 0);
+    lv_obj_add_event_cb(roller100, roller_event_UpdateRateHun, LV_EVENT_ALL, NULL);
+
+    lv_obj_t* roller10 = lv_roller_create(lv_scr_act());
+    lv_roller_set_options(roller10, opts, LV_ROLLER_MODE_INFINITE);
+    lv_roller_set_visible_row_count(roller10, 3);
+    lv_obj_align_to(roller10, roller100, LV_ALIGN_RIGHT_MID, 50, 0);
+    lv_obj_add_event_cb(roller10, roller_event_UpdateRateTen, LV_EVENT_ALL, NULL);
+
+    lv_obj_t* roller1 = lv_roller_create(lv_scr_act());
+    lv_roller_set_options(roller1, opts, LV_ROLLER_MODE_INFINITE);
+    lv_roller_set_visible_row_count(roller1, 3);
+    lv_obj_align_to(roller1, roller10, LV_ALIGN_RIGHT_MID, 50, 0);
+    lv_obj_add_event_cb(roller1, roller_event_UpdateRateOne, LV_EVENT_ALL, NULL);
+
+    lv_obj_t* roller2 = lv_roller_create(lv_scr_act());
+    lv_roller_set_options(roller2, "ml/sec\nml/min\nml/h", LV_ROLLER_MODE_INFINITE);
+    lv_roller_set_visible_row_count(roller2, 2);
+    lv_obj_align(roller2, LV_ALIGN_RIGHT_MID, -10, 0);
+    lv_obj_add_event_cb(roller2, roller_event_UpdateRateUnit, LV_EVENT_ALL, NULL);
+
     statusLabel = lv_label_create(lv_scr_act());
     lv_obj_set_pos(statusLabel, 50, 50);
     lv_obj_set_size(statusLabel, 80, 50);
     lv_label_set_text(statusLabel, "Paused");
+    
 
-    lv_obj_t *cont = lv_obj_create(lv_scr_act());
-    lv_obj_set_size(cont, 200, 200);
-    lv_obj_center(cont);
-    lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
-    /*lv_obj_add_event_cb(cont, scroll_event_cb, LV_EVENT_SCROLL, NULL);
-    lv_obj_set_style_radius(cont, LV_RADIUS_CIRCLE, 0);
-    lv_obj_set_style_clip_corner(cont, true, 0);
-    lv_obj_set_scroll_dir(cont, LV_DIR_VER);
-    lv_obj_set_scroll_snap_y(cont, LV_SCROLL_SNAP_CENTER);
-    lv_obj_set_scrollbar_mode(cont, LV_SCROLLBAR_MODE_OFF);*/
-
-    uint32_t i;
-    for (i = 0; i < 10; i++)
-    {
-        lv_obj_t *btn = lv_btn_create(cont);
-        lv_obj_set_width(btn, lv_pct(100));
-        lv_obj_add_event_cb(btn, btn_event_UpdateRate, LV_EVENT_ALL, NULL);
-        lv_obj_t *label = lv_label_create(btn);
-        lv_label_set_text_fmt(label, "Rate %" LV_PRIu32, i);
-    }
-
-    /*Update the buttons position manually for first*/
-    lv_event_send(cont, LV_EVENT_SCROLL, NULL);
-
-    /*Be sure the fist button is in the middle*/
-    lv_obj_scroll_to_view(lv_obj_get_child(cont, 0), LV_ANIM_OFF);
 
     rateLabel = lv_label_create(lv_scr_act());
-    lv_label_set_text(rateLabel, "Rate: 0");
-    lv_obj_align_to(rateLabel, cont, LV_ALIGN_OUT_BOTTOM_MID, 0, 40);
-    lv_obj_align_to(statusLabel, cont, LV_ALIGN_OUT_BOTTOM_MID, 0, 30);
-
+    lv_label_set_text(rateLabel, "Rate: 0 ml/sec");
+    lv_obj_align(rateLabel, LV_ALIGN_BOTTOM_MID, 0, 0);
+    lv_obj_align_to(statusLabel, rateLabel, LV_ALIGN_OUT_BOTTOM_MID, 0, 10);
     while (true)
     {
 

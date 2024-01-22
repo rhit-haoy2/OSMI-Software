@@ -81,6 +81,10 @@ void setup(void)
 		.driver = driverInst,
 		.handle = &displayQueueHandle,
 	};
+	Serial.printf("handleaddress: %p\n",&displayConfig);
+	Serial.printf("driverinhandleaddress: %p\n",displayConfig.driver);
+	Serial.printf("driveraddress: %p\n",driverInst);
+	Serial.printf("queueaddress: %p\n", displayConfig.handle);
 
 	//BaseType_t TestSuccess = xTaskCreate(SelfStartTestTask, "DISP", 64000, &displayConfig, 2, nullptr);
 	BaseType_t dispSuccess = xTaskCreate(DisplayTask, "DISP", 64000, &displayConfig, 2, nullptr);
