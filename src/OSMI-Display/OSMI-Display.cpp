@@ -4,6 +4,12 @@
 #include <lvgl.h>
 #include "demos/lv_demos.h"
 #include "TFT_Config.h"
+#include "OSMI-Control/FluidDeliveryController.h"
+
+#define SPI_DRIVER_CS 27
+#define MOTOR_PWM_PIN 26
+#define LIMIT_SWITCH_PIN 25
+#define DIST_PER_STEP 1.0
 
 TFT_eSPI tft = TFT_eSPI();
 static Team11Control *controller;
@@ -249,10 +255,12 @@ void DisplayTask(void *params)
 
     // Setup parameters.
     display_config_t *handle = (display_config_t *)params;
-    controller = new Team11Control(1, handle->driver);
-    Serial.printf("HandleDispAddress: %p\n", handle);
-    Serial.printf("DriverDispAddress: %p\n", handle->driver);
-    Serial.printf("QueueDispAddress: %p\n", handle->handle);
+
+    FluidDeliveryDriver *driverInst = (FluidDeliveryDriver *)new ESP32PwmSpiDriver(SPI_DRIVER_CS, MOTOR_PWM_PIN, LIMIT_SWITCH_PIN, DIST_PER_STEP);
+    controller = new Team11Control(1, driverInst);
+    // Serial.printf("HandleDispAddress: %p\n", handle);
+    // Serial.printf("DriverDispAddress: %p\n", handle->driver);
+    // Serial.printf("QueueDispAddress: %p\n", handle->handle);
 
     lv_init();
 
@@ -283,7 +291,7 @@ void DisplayTask(void *params)
     lv_obj_t *startbtn = lv_btn_create(lv_scr_act());
     lv_obj_set_pos(startbtn, 10, 10);  /*Set its position*/
     lv_obj_set_size(startbtn, 80, 50); /*Set its size*/
-    lv_obj_add_event_cb(startbtn, btn_event_Start, LV_EVENT_ALL, controller);
+    lv_obj_add_event_cb(startbtn, btn_event_Start, LV_EVENT_ALL, NULL);
     lv_obj_t *startbtnlabel = lv_label_create(startbtn); /*Add a label to the button*/
     lv_label_set_text(startbtnlabel, "Start");           /*Set the labels text*/
     lv_obj_center(startbtnlabel);
@@ -291,7 +299,7 @@ void DisplayTask(void *params)
     lv_obj_t *btn = lv_btn_create(lv_scr_act());                         /*Add a button the current screen*/
     lv_obj_set_pos(btn, 100, 10);                                        /*Set its position*/
     lv_obj_set_size(btn, 80, 50);                                        /*Set its size*/
-    lv_obj_add_event_cb(btn, btn_event_Pause, LV_EVENT_ALL, controller); /*Assign a callback to the button*/
+    lv_obj_add_event_cb(btn, btn_event_Pause, LV_EVENT_ALL, NULL); /*Assign a callback to the button*/
     lv_obj_t *btnlabel = lv_label_create(btn);                           /*Add a label to the button*/
     lv_label_set_text(btnlabel, "Stop");                                 /*Set the labels text*/
     lv_obj_center(btnlabel);

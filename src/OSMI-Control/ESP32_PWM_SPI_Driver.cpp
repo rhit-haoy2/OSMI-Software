@@ -101,6 +101,7 @@ ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin
 
     // Setup Pulse Counter
     initPulseCounter();
+
 }
 
 float ESP32PwmSpiDriver::getDistanceMm()

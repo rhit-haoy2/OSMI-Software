@@ -14,7 +14,7 @@
 #define DISPLAY_HORZ 240
 
 typedef struct {
-    FluidDeliveryDriver* driver;
+    //FluidDeliveryDriver* driver;
     QueueHandle_t * handle;
 } display_config_t;
 

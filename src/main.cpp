@@ -78,11 +78,11 @@ void setup(void)
 
 	// Configure display struct.
 	display_config_t displayConfig = {
-		.driver = driverInst,
+		//.driver = driverInst,
 		.handle = &displayQueueHandle,
 	};
 	Serial.printf("handleaddress: %p\n",&displayConfig);
-	Serial.printf("driverinhandleaddress: %p\n",displayConfig.driver);
+	//Serial.printf("driverinhandleaddress: %p\n",displayConfig.driver);
 	Serial.printf("driveraddress: %p\n",driverInst);
 	Serial.printf("queueaddress: %p\n", displayConfig.handle);
 
