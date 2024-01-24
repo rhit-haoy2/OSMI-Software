@@ -16,6 +16,8 @@
 #define LIMIT_SWITCH_PIN 25
 #define DIST_PER_STEP 1.0
 
+#define ESTOP_PIN 34
+
 
 bool debouncing = false;
 hw_timer_t *debounce_timer;
@@ -66,8 +68,8 @@ void setup(void)
 	initDebounceTimer();
 
 	// Create Start Stop Button Interrupt.
-	pinMode(17, INPUT_PULLUP); // Set pin 17 to pullup input.
-	attachInterrupt(digitalPinToInterrupt(17), ToggleISR, RISING);
+	pinMode(ESTOP_PIN, INPUT_PULLUP); // Set pin ESTOP_PIN to pullup input.
+	attachInterrupt(digitalPinToInterrupt(ESTOP_PIN), ToggleISR, RISING);
 
 	// Create the communication lines between tasks. Usually only one number at a time.
 	displayQueueHandle = xQueueCreate(1, sizeof(int));
