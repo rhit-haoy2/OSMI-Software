@@ -101,7 +101,6 @@ ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin
 
     // Setup Pulse Counter
     initPulseCounter();
-
 }
 
 float ESP32PwmSpiDriver::getDistanceMm()
@@ -159,7 +158,7 @@ void ESP32PwmSpiDriver::setDirection(direction_t direction)
     {
     Reverse:
         microStepperDriver.setDirection(false); // todo confirm directioning or make reconfigurable.
-        //TODO change pulse counter direction to count down.
+        // TODO change pulse counter direction to count down.
         break;
     Depress:
     default:
@@ -201,7 +200,8 @@ void ESP32PwmSpiDriver::setStepsInIsr(unsigned long long steps)
 
 int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
 {
-    if(this->status == Moving) {
+    if (this->status == Moving)
+    {
         return -1; // dont change speed while moving. may need to change.
     }
     ESP_LOGD(TAG, "Setting Velocity: %.1f%%", mmPerMinute);

@@ -18,18 +18,16 @@
 
 Team11Control::Team11Control(float volumePerDistance, FluidDeliveryDriver *driver)
 {
-    //TODO setup p_controller with appropriate values.
+    // TODO setup p_controller with appropriate values.
     this->p_Controller = FastPID(0, 0, 0, 2);
     this->driver = driver;
     this->volumePerDistance = volumePerDistance;
-    //create task here if applicable
-
+    // create task here if applicable
 }
 
 Team11Control::~Team11Control()
 {
     // Delete task here.
-
 }
 
 bool Team11Control::startFlow()
@@ -47,12 +45,15 @@ bool Team11Control::stopFlow()
 void Team11Control::reverse(void)
 {
     direction_t direction = this->driver->getDirection();
-    if(direction == Depress) {
+    if (direction == Depress)
+    {
         direction = Reverse;
-    } else {
+    }
+    else
+    {
         direction = Depress;
     }
-    
+
     this->driver->setDirection(direction);
 }
 

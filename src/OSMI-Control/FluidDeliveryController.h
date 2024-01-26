@@ -90,9 +90,8 @@ public:
 
     // Gabe, Describe your function here.
 
-
 private:
-    // Task Handle here.    
+    // Task Handle here.
 
     FastPID p_Controller;
     FluidDeliveryDriver *driver;
