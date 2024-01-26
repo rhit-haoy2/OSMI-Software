@@ -109,6 +109,7 @@ float ESP32PwmSpiDriver::getDistanceMm()
     Serial.println("IMPLEMENT ESP32::getFeedback!");
     int16_t pulses = 0;
     pcnt_get_counter_value(DEFAULT_PCNT_UNIT, &pulses);
+    // TODO Add with larger data type for overflow.
 
     return float(pulses);
 }
@@ -158,9 +159,11 @@ void ESP32PwmSpiDriver::setDirection(direction_t direction)
     {
     Reverse:
         microStepperDriver.setDirection(false); // todo confirm directioning or make reconfigurable.
+        //TODO change pulse counter direction to count down.
         break;
     Depress:
     default:
+        // TODO Change pulse counter direction to count up.
         microStepperDriver.setDirection(true);
     }
 }

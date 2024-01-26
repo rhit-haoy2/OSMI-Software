@@ -18,14 +18,18 @@
 
 Team11Control::Team11Control(float volumePerDistance, FluidDeliveryDriver *driver)
 {
-    this->p_Controller = FastPID(volumePerDistance, 0, 0, 2);
+    //TODO setup p_controller with appropriate values.
+    this->p_Controller = FastPID(0, 0, 0, 2);
     this->driver = driver;
     this->volumePerDistance = volumePerDistance;
+    //create task here if applicable
+
 }
 
 Team11Control::~Team11Control()
 {
     // Delete task here.
+
 }
 
 bool Team11Control::startFlow()

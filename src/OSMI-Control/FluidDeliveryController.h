@@ -58,18 +58,34 @@ private:
 class Team11Control : public FluidDeliveryController
 {
 public:
-    Team11Control(float volumePerDistance, FluidDeliveryDriver *driverInstance);
+    Team11Control(float mlPerMm, FluidDeliveryDriver *driverInstance);
     ~Team11Control();
 
+    /// @brief  Start the flow
+    /// @param  void
+    /// @return Success.
     bool startFlow(void);
+
+    /// @brief Stop the flow.
+    /// @param  void
+    /// @return Success.
     bool stopFlow(void);
 
+    /// @brief Changes the direction of the flow rate. Does not work unless flow is stopped.
+    /// @param  void
     void reverse(void);
 
     void setFlow(float flowRateMlPerMin);
     void setVolumetricConversion(float mlPerMm);
 
+    /// @brief Get Volume in milliliters delivered.
+    /// @param  void
+    /// @return mL delivered as of now.
     float getVolumeDelivered(void);
+
+    /// @brief Get the current status of the control system.
+    /// @param  void
+    /// @return Current state of the system.
     int getStatus(void) { return state; };
 
     // Gabe, Describe your function here.
