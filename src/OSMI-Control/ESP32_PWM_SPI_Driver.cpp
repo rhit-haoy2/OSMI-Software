@@ -235,10 +235,32 @@ int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
     {
         return -1;
     }
-    
+
     ESP_LOGD(TAG, "Setting Velocity: %.1f%%", mmPerMinute);
 
-    int stepPerSecond = lrint(mmPerMinute * 60 / distancePerStepMm);
+    // full winding step / second.
+    float stepPerSecond = mmPerMinute * 60 / distancePerStepMm;
+    u_int8_t micro_phase = 0;
+
+    for (int i = 0; i < 8; i++)
+    {
+        if (stepPerSecond > 1000)
+            break; // double the step rate..
+        stepPerSecond *= 2;
+
+        if (micro_phase == 0)
+        {
+            micro_phase = 3;
+        }
+        else if (micro_phase >= 0b1010)
+        {
+            micro_phase == 0b1010;
+        }
+        else
+        {
+            micro_phase++;
+        }
+    }
 
     if (stepPerSecond < 0)
     {
@@ -248,6 +270,7 @@ int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
 
     ESP_LOGD("StepHz: %.1f%%", stepPerSecond);
     analogWriteFrequency(stepPerSecond);
+    this->microStepperDriver.setStepMode(micro_phase);
     return 0;
 }
 

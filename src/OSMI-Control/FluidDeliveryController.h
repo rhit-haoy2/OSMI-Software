@@ -47,6 +47,7 @@ public:
 private:
     int stepPin;
     int stopPin;
+    /// @brief Step is full winding step.
     float distancePerStepMm;
     unsigned long long distanceSteps;
     EspDriverStatus_t status;
