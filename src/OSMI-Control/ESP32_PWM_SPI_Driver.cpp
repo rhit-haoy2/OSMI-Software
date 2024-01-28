@@ -231,9 +231,8 @@ void ESP32PwmSpiDriver::setStepsInIsr(unsigned long long steps)
 
 int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
 {
-    if (this->status == Moving)
-    {
-        return -1; // dont change speed while moving. may need to change.
+    if(mmPerMinute < 0) {
+        return -1;
     }
     ESP_LOGD(TAG, "Setting Velocity: %.1f%%", mmPerMinute);
 
