@@ -4,6 +4,28 @@
 #include <driver/gpio.h>
 
 static const char *TAG = "ESP32PwmSpiDriver";
+static pcnt_config_t upConfig = {
+    .ctrl_gpio_num = PCNT_PIN_NOT_USED,
+    .pos_mode = PCNT_COUNT_INC,
+    .neg_mode = PCNT_COUNT_DIS,
+    .counter_h_lim = (int16_t)0xffff - 1,
+    .counter_l_lim = -1,
+    .unit = DEFAULT_PCNT_UNIT,
+    .channel = PCNT_CHANNEL_0,
+};
+
+static pcnt_config_t downConfig = {
+    .ctrl_gpio_num = PCNT_PIN_NOT_USED,
+    .pos_mode = PCNT_COUNT_DEC,
+    .neg_mode = PCNT_COUNT_DIS,
+    .counter_h_lim = (int16_t)0xffff - 1,
+    .counter_l_lim = -1,
+    .unit = DEFAULT_PCNT_UNIT,
+    .channel = PCNT_CHANNEL_0,
+};
+
+// Allows for static inversion of counting up or down.
+static pcnt_config_t *configs[2] = {&upConfig, &downConfig};
 
 static pcnt_isr_handle_t isrHandle = 0;
 
@@ -32,18 +54,9 @@ static void IRAM_ATTR limitISRHandler(void *driverInst)
 void ESP32PwmSpiDriver::initPulseCounter(void)
 {
     // Config for the unit.
-    pcnt_config_t config = {
-        .pulse_gpio_num = stepPin,
-        .ctrl_gpio_num = PCNT_PIN_NOT_USED,
-        .pos_mode = PCNT_COUNT_INC,
-        .neg_mode = PCNT_COUNT_DIS,
-        .counter_h_lim = (int16_t)0xffff - 1,
-        .counter_l_lim = -1,
-        .unit = DEFAULT_PCNT_UNIT,
-        .channel = PCNT_CHANNEL_0,
-    };
-
-    pcnt_unit_config(&config);
+    upConfig.pulse_gpio_num = this->stepPin;
+    downConfig.pulse_gpio_num = this->stepPin;
+    pcnt_unit_config(&upConfig);
     pcnt_counter_pause(DEFAULT_PCNT_UNIT);
     pcnt_event_enable(DEFAULT_PCNT_UNIT, PCNT_EVT_H_LIM);
     pcnt_event_enable(DEFAULT_PCNT_UNIT, PCNT_EVT_L_LIM);
@@ -105,12 +118,12 @@ ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin
 
 float ESP32PwmSpiDriver::getDistanceMm()
 {
-    Serial.println("IMPLEMENT ESP32::getFeedback!");
     int16_t pulses = 0;
     pcnt_get_counter_value(DEFAULT_PCNT_UNIT, &pulses);
-    // TODO Add with larger data type for overflow.
+    unsigned long long steps = this->distanceSteps + pulses;
+    float distance = steps / distancePerStepMm;
 
-    return float(pulses);
+    return distance;
 }
 
 float ESP32PwmSpiDriver::getDistanceSteps(void)
@@ -121,7 +134,7 @@ float ESP32PwmSpiDriver::getDistanceSteps(void)
 void ESP32PwmSpiDriver::enable()
 {
     Serial.println("IMPLEMENT ESP32::enable!");
-    // TODO: enable pulse counter.
+
     pcnt_counter_resume(DEFAULT_PCNT_UNIT);
 
     // Re-enable driver.
@@ -137,8 +150,6 @@ void ESP32PwmSpiDriver::enable()
 /// @brief Disable the driver.
 void ESP32PwmSpiDriver::disable()
 {
-    Serial.println("IMPLEMENT ESP32::disable!");
-
     // disable PWM. Stop motor layer 1.
     analogWrite(stepPin, 0);
 
@@ -152,24 +163,42 @@ void ESP32PwmSpiDriver::disable()
 
 void ESP32PwmSpiDriver::setDirection(direction_t direction)
 {
-    this->direction = direction;
+    // Guard against changing directions while moving.
+    if (status == Moving)
+        return;
 
     switch (direction)
     {
     Reverse:
+        // set the pulse counter direction the inverse of up / down.
+        pcnt_unit_config(configs[inverseDirection ^ 1]);
         microStepperDriver.setDirection(false); // todo confirm directioning or make reconfigurable.
-        // TODO change pulse counter direction to count down.
         break;
     Depress:
     default:
-        // TODO Change pulse counter direction to count up.
+        // Change pulse counter direction to count up.
+        pcnt_unit_config(configs[inverseDirection]);
         microStepperDriver.setDirection(true);
     }
 }
 
 direction_t ESP32PwmSpiDriver::getDirection(void)
 {
-    return this->direction;
+    return microStepperDriver.getDirection() ? Depress : Reverse;
+}
+
+void ESP32PwmSpiDriver::setCountUpDirection(direction_t direction)
+{
+    switch (direction)
+    {
+    case Reverse:
+        inverseDirection = 1;
+        break;
+    
+    default:
+        inverseDirection = 0;
+        break;
+    }
 }
 
 bool ESP32PwmSpiDriver::occlusionDetected()
@@ -193,6 +222,8 @@ void ESP32PwmSpiDriver::disableInIsr()
     this->status = limitStopped;
 }
 
+/// @brief sets the current number of steps from an ISR. Do not call this function in userspace.
+/// @param steps the current number of steps
 void ESP32PwmSpiDriver::setStepsInIsr(unsigned long long steps)
 {
     this->distanceSteps = steps;

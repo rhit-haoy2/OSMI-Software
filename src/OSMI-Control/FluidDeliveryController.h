@@ -37,6 +37,8 @@ public:
 
     void setDirection(direction_t direction);
     direction_t getDirection(void);
+    /// @brief Set the current direction as counting up.
+    void setCountUpDirection(direction_t direction);
     bool occlusionDetected(void);
 
     void disableInIsr();
@@ -48,7 +50,7 @@ private:
     float distancePerStepMm;
     unsigned long long distanceSteps;
     EspDriverStatus_t status;
-    direction_t direction;
+    int inverseDirection = 0;
     DRV8434S microStepperDriver;
     void initPWM(void);
     void initPulseCounter(void);
