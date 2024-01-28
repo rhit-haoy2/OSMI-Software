@@ -84,7 +84,7 @@ static void btn_event_Start(lv_event_t *e)
 
 static void UpdateFlowText()
 {
-    // controller->stopFlow();
+    controller->stopFlow();
     std::string flowtext = "Rate: ";
     char num[5];
 std:
@@ -106,6 +106,25 @@ std:
         break;
     }
     lv_label_set_text(rateLabel, flowtext.c_str());
+}
+
+static void UpdateRate(){
+    float rate = flowrate;
+    switch (unit)
+    {
+    case 0:
+        rate = rate*60;
+        break;
+    case 1:
+        rate = rate;
+        break;
+    case 2:
+        rate = rate/60.0;
+        break;
+    default:
+        break;
+    }
+    controller->setFlow(rate);
 }
 
 // static void btn_event_UpdateRate(lv_event_t *e)
@@ -324,11 +343,11 @@ void DisplayTask(void *params)
     lv_obj_align_to(roller1, roller10, LV_ALIGN_RIGHT_MID, 50, 0);
     lv_obj_add_event_cb(roller1, roller_event_UpdateRateOne, LV_EVENT_ALL, NULL);
 
-    lv_obj_t *roller2 = lv_roller_create(lv_scr_act());
-    lv_roller_set_options(roller2, "ml/sec\nml/min\nml/h", LV_ROLLER_MODE_INFINITE);
-    lv_roller_set_visible_row_count(roller2, 2);
-    lv_obj_align(roller2, LV_ALIGN_RIGHT_MID, -10, 0);
-    lv_obj_add_event_cb(roller2, roller_event_UpdateRateUnit, LV_EVENT_ALL, NULL);
+    lv_obj_t *rollerunit = lv_roller_create(lv_scr_act());
+    lv_roller_set_options(rollerunit, "ml/sec\nml/min\nml/h", LV_ROLLER_MODE_INFINITE);
+    lv_roller_set_visible_row_count(rollerunit, 2);
+    lv_obj_align(rollerunit, LV_ALIGN_RIGHT_MID, -10, 0);
+    lv_obj_add_event_cb(rollerunit, roller_event_UpdateRateUnit, LV_EVENT_ALL, NULL);
 
     statusLabel = lv_label_create(lv_scr_act());
     lv_obj_set_pos(statusLabel, 50, 50);
