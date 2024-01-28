@@ -37,7 +37,7 @@ public:
 
     void setDirection(direction_t direction);
     direction_t getDirection(void);
-    /// @brief Set the current direction as counting up.
+/// @brief Set the current direction as counting up.
     void setCountUpDirection(direction_t direction);
     bool occlusionDetected(void);
 
@@ -47,7 +47,7 @@ public:
 private:
     int stepPin;
     int stopPin;
-    /// @brief Step is full winding step.
+/// @brief Step is full winding step.
     float distancePerStepMm;
     unsigned long long distanceSteps;
     EspDriverStatus_t status;
@@ -74,14 +74,14 @@ public:
     /// @return Success.
     bool stopFlow(void);
 
-    /// @brief Changes the direction of the flow rate. Does not work unless flow is stopped.
+/// @brief Changes the direction of the flow rate. Does not work unless flow is stopped.
     /// @param  void
     void reverse(void);
 
     void setFlow(float flowRateMlPerMin);
     void setVolumetricConversion(float mlPerMm);
 
-    /// @brief Get Volume in milliliters delivered.
+/// @brief Get Volume in milliliters delivered.
     /// @param  void
     /// @return mL delivered as of now.
     float getVolumeDelivered(void);
@@ -91,14 +91,26 @@ public:
     /// @return Current state of the system.
     int getStatus(void) { return state; };
 
+    int configureDosage(float bolusRate, float bolusVolume, float infusionRate, float infusionVolume);
+    
+
     // Gabe, Describe your function here.
-
+    void controlTaskUpdate(void);
+    
 private:
-    // Task Handle here.
-
+    // Task Handle here.    
+    
     FastPID p_Controller;
     FluidDeliveryDriver *driver;
+    TaskHandle_t controlTask;
     float volumePerDistance;
+    float bolusRate = -1;
+    float bolusVolume = -1;
+    float infusionRate = -1;
+    float infusionVolume = -1;
+    float prevBolusVolume = 0;
+    float currBolusVolume = 0;
+    unsigned long startTime = 0;
     int state;
 };
 
