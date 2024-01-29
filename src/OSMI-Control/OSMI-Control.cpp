@@ -56,7 +56,7 @@ void Team11Control::controlTaskUpdate()
     // Switch State
     switch (state)
     {
-    case 3:
+    case 3: // Temporary stop infusion state.
         state = 0;
         break;
     case 2:                                           // infusion volume comparison.
