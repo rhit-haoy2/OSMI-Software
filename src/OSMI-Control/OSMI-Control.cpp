@@ -48,13 +48,35 @@ Team11Control::Team11Control(float volumePerDistance, FluidDeliveryDriver *drive
 
 void Team11Control::controlTaskUpdate()
 {
+
     float setpoint;
     float feedback = getVolumeDelivered();
     unsigned long currTime = millis() - startTime; // f*** the user timer
-    // TODO: check if currTime is less than startTime
 
+    // Switch State
     switch (state)
     {
+    case 3:
+        state = 0;
+        break;
+    case 2:                                           // infusion volume comparison.
+        state = (feedback >= infusionVolume) ? 0 : 3; // if feedback >= infusion max volume, go to stop state.
+        break;
+    case 1: // bolus delivery
+        state = (feedback >= bolusVolume) ? 0 : 1;
+        break;
+    case 0:
+    default:
+        break;
+    }
+
+    // Action Based on State
+    switch (state)
+    {
+    case 3: // temporary stop state.
+        this->driver->disable();
+        this->state = 0;
+        return;
     case 2: // infusion delivery
         setpoint = (infusionRate * currTime) + bolusVolume;
         break;
@@ -62,11 +84,12 @@ void Team11Control::controlTaskUpdate()
         setpoint = bolusRate * currTime;
         break;
 
-    case 0: // stop
+    case 0:
     default:
         return;
     }
 
+    // Set velocity for cases 2 & 1.
     unsigned long long newSpeed = this->p_Controller.step(lroundf(setpoint), lroundf(feedback));
     this->driver->setVelocity(newSpeed);
 }
