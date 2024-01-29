@@ -23,7 +23,7 @@ void Team11ControlTask(void *parameters)
     while (1)
     {
         controlSystem->controlTaskUpdate();
-        delay(1000);
+        delay(100);
     }
 }
 
