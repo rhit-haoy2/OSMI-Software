@@ -1,6 +1,6 @@
 #include "osmi_roller_selector.h"
 #include <stdio.h>
-const char *numeric_options = "0\n1\n2\n3\n4\n5\n6\n7\n8\n9";
+
 
 /**
  * @brief Handles when any of the values change.
@@ -27,7 +27,7 @@ float osmi_roller_get_value(osmi_roller_selector *this)
     return this->value;
 }
 
-void osmi_roller_selector_create(lv_obj_t *parent, osmi_roller_selector *this)
+void osmi_roller_selector_create(lv_obj_t *parent, osmi_roller_selector *this, const char* numeric_options, char* units)
 {
     this->value = 0.0;
 
@@ -45,7 +45,7 @@ void osmi_roller_selector_create(lv_obj_t *parent, osmi_roller_selector *this)
     this->roller_units = lv_roller_create(this->container);
 
     // Units roller settings.
-    lv_roller_set_options(this->roller_units, "ml/sec\nml/min\nml/h", LV_ROLLER_MODE_INFINITE);
+    lv_roller_set_options(this->roller_units, , LV_ROLLER_MODE_INFINITE);
     lv_roller_set_visible_row_count(this->roller_units, 2);
     lv_obj_add_flag(this->roller_ones, LV_OBJ_FLAG_EVENT_BUBBLE); // required for proper event handling.
 

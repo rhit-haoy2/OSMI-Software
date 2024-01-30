@@ -3,6 +3,9 @@
 #include "lvgl/lvgl.h"
 #include "lvgl/src/core/lv_obj_class.h"
 
+const char *numeric_options = "0\n1\n2\n3\n4\n5\n6\n7\n8\n9";
+const char *default_rate_untis = "ml/sec\nml/min\nml/h";
+
 typedef struct
 {
     lv_obj_t *container;

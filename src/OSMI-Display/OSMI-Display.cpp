@@ -304,59 +304,8 @@ void DisplayTask(void *params)
     /*Register the driver in LVGL and save the created input device object*/
     my_indev = lv_indev_drv_register(&indev_drv);
 
-    flowrate = 0;
-    unit = 0;
-
-    lv_obj_t *startbtn = lv_btn_create(lv_scr_act());
-    lv_obj_set_pos(startbtn, 10, 10);  /*Set its position*/
-    lv_obj_set_size(startbtn, 80, 50); /*Set its size*/
-    lv_obj_add_event_cb(startbtn, btn_event_Start, LV_EVENT_ALL, NULL);
-    lv_obj_t *startbtnlabel = lv_label_create(startbtn); /*Add a label to the button*/
-    lv_label_set_text(startbtnlabel, "Start");           /*Set the labels text*/
-    lv_obj_center(startbtnlabel);
-
-    lv_obj_t *btn = lv_btn_create(lv_scr_act());                   /*Add a button the current screen*/
-    lv_obj_set_pos(btn, 100, 10);                                  /*Set its position*/
-    lv_obj_set_size(btn, 80, 50);                                  /*Set its size*/
-    lv_obj_add_event_cb(btn, btn_event_Pause, LV_EVENT_ALL, NULL); /*Assign a callback to the button*/
-    lv_obj_t *btnlabel = lv_label_create(btn);                     /*Add a label to the button*/
-    lv_label_set_text(btnlabel, "Stop");                           /*Set the labels text*/
-    lv_obj_center(btnlabel);
-
-    const char *opts = "0\n1\n2\n3\n4\n5\n6\n7\n8\n9";
-    lv_obj_t *roller100 = lv_roller_create(lv_scr_act());
-    lv_roller_set_options(roller100, opts, LV_ROLLER_MODE_INFINITE);
-    lv_roller_set_visible_row_count(roller100, 3);
-    lv_obj_align(roller100, LV_ALIGN_LEFT_MID, 10, 0);
-    lv_obj_add_event_cb(roller100, roller_event_UpdateRateHun, LV_EVENT_ALL, NULL);
-
-    lv_obj_t *roller10 = lv_roller_create(lv_scr_act());
-    lv_roller_set_options(roller10, opts, LV_ROLLER_MODE_INFINITE);
-    lv_roller_set_visible_row_count(roller10, 3);
-    lv_obj_align_to(roller10, roller100, LV_ALIGN_RIGHT_MID, 50, 0);
-    lv_obj_add_event_cb(roller10, roller_event_UpdateRateTen, LV_EVENT_ALL, NULL);
-
-    lv_obj_t *roller1 = lv_roller_create(lv_scr_act());
-    lv_roller_set_options(roller1, opts, LV_ROLLER_MODE_INFINITE);
-    lv_roller_set_visible_row_count(roller1, 3);
-    lv_obj_align_to(roller1, roller10, LV_ALIGN_RIGHT_MID, 50, 0);
-    lv_obj_add_event_cb(roller1, roller_event_UpdateRateOne, LV_EVENT_ALL, NULL);
-
-    lv_obj_t *rollerunit = lv_roller_create(lv_scr_act());
-    lv_roller_set_options(rollerunit, "ml/sec\nml/min\nml/h", LV_ROLLER_MODE_INFINITE);
-    lv_roller_set_visible_row_count(rollerunit, 2);
-    lv_obj_align(rollerunit, LV_ALIGN_RIGHT_MID, -10, 0);
-    lv_obj_add_event_cb(rollerunit, roller_event_UpdateRateUnit, LV_EVENT_ALL, NULL);
-
-    statusLabel = lv_label_create(lv_scr_act());
-    lv_obj_set_pos(statusLabel, 50, 50);
-    lv_obj_set_size(statusLabel, 80, 50);
-    lv_label_set_text(statusLabel, "Paused");
-
-    rateLabel = lv_label_create(lv_scr_act());
-    lv_label_set_text(rateLabel, "Rate: 0 ml/sec");
-    lv_obj_align(rateLabel, LV_ALIGN_BOTTOM_MID, 0, 0);
-    lv_obj_align_to(statusLabel, rateLabel, LV_ALIGN_OUT_BOTTOM_MID, 0, 10);
+    
+    
     while (true)
     {
 
