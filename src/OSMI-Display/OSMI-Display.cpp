@@ -305,8 +305,11 @@ void DisplayTask(void *params)
     /*Register the driver in LVGL and save the created input device object*/
     my_indev = lv_indev_drv_register(&indev_drv);
 
-    lv_obj_t* config = create_config_screen(); // temporarily load config screen as default screen.
-    lv_scr_load(config);
+    config_screen_t config_screen;
+    config_screen.controller = controller;
+    create_config_screen(&config_screen); // temporarily load config screen as default screen.
+
+    lv_scr_load(config_screen.config_screen);
     
     while (true)
     {
