@@ -27,7 +27,7 @@ float osmi_roller_get_value(osmi_roller_selector *this)
     return this->value;
 }
 
-void osmi_roller_selector_create(lv_obj_t *parent, osmi_roller_selector *this, const char* numeric_options, char* units)
+void osmi_roller_selector_create(lv_obj_t *parent, osmi_roller_selector *this, const char* numeric_options, char* unit_options)
 {
     this->value = 0.0;
 
@@ -45,7 +45,7 @@ void osmi_roller_selector_create(lv_obj_t *parent, osmi_roller_selector *this, c
     this->roller_units = lv_roller_create(this->container);
 
     // Units roller settings.
-    lv_roller_set_options(this->roller_units, , LV_ROLLER_MODE_INFINITE);
+    lv_roller_set_options(this->roller_units, unit_options, LV_ROLLER_MODE_INFINITE);
     lv_roller_set_visible_row_count(this->roller_units, 2);
     lv_obj_add_flag(this->roller_ones, LV_OBJ_FLAG_EVENT_BUBBLE); // required for proper event handling.
 
