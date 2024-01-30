@@ -26,7 +26,7 @@ float osmi_roller_get_value(osmi_roller_selector *selector)
     return selector->value;
 }
 
-void osmi_roller_selector_create(lv_obj_t *parent, osmi_roller_selector *selector, const char* numeric_options, const char* unit_options)
+void osmi_roller_selector_create(lv_obj_t *parent, osmi_roller_selector *selector, const char *numeric_options, const char *unit_options)
 {
     selector->value = 0.0;
 
@@ -40,6 +40,10 @@ void osmi_roller_selector_create(lv_obj_t *parent, osmi_roller_selector *selecto
 
     selector->roller_tens = lv_roller_create(selector->container);
     selector->roller_ones = lv_roller_create(selector->container);
+
+    lv_obj_t *decimal = lv_label_create(selector->container);
+    lv_label_set_text(decimal, ".");
+
     selector->roller_tenths = lv_roller_create(selector->container);
     selector->roller_units = lv_roller_create(selector->container);
 

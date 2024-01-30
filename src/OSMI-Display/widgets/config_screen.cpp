@@ -18,7 +18,12 @@ static void confirm_button_handler(lv_event_t *event)
     screen->controller->stopFlow();
     screen->controller->configureDosage(screen->bolus_rate.value, screen->bolus_volume.value, screen->infusion_rate.value, screen->infusion_volume.value);
     screen->controller->startFlow();
-    //todo add modal to show status.
+
+    char *buttons[1] = {"Ok", ""};
+
+    //Modal for alerts.
+    lv_msgbox_create(NULL, "Alert", "You have started delivery", buttons, true);
+    // todo add modal to show status.
     Serial.println("Start Button Pressed.");
 }
 static void cancel_button_handler(lv_event_t *event)
@@ -37,29 +42,42 @@ void create_config_screen(config_screen_t *screen)
     lv_obj_set_layout(screen->config_screen, LV_LAYOUT_FLEX);
     lv_obj_set_flex_flow(screen->config_screen, LV_FLEX_FLOW_COLUMN);
 
+    // Dosage settings title.
+    temporary_label = lv_label_create(screen->config_screen);
+    lv_style_t title_style;
+    lv_style_init(&title_style);
+    lv_style_set_text_font(&title_style, &lv_font_montserrat_36);
+    lv_obj_add_style(temporary_label, &title_style, 0);
+    lv_label_set_text(temporary_label, "Dosage Settings Menu");
+
     const char *numeric_options = "0\n1\n2\n3\n4\n5\n6\n7\n8\n9";
     const char *default_rates_units = "ml/sec\nml/min\nml/h";
-
     // create unit selectors.
     //  For labels between objects.
-    lv_obj_t *label = lv_label_create(screen->config_screen);
-    lv_label_set_text(label, "Bolus Rate:");
+    temporary_label = lv_label_create(screen->config_screen);
+    lv_label_set_text(temporary_label, "Bolus Rate:");
     osmi_roller_selector_create(screen->config_screen, &screen->bolus_rate, numeric_options, default_rates_units);
 
-    label = lv_label_create(screen->config_screen);
-    lv_label_set_text(label, "Bolus Volume:");
+    temporary_label = lv_label_create(screen->config_screen);
+    lv_label_set_text(temporary_label, "Bolus Volume:");
     osmi_roller_selector_create(screen->config_screen, &screen->bolus_volume, numeric_options, "ml");
 
-    label = lv_label_create(screen->config_screen);
-    lv_label_set_text(label, "Infusion Rate:");
+    temporary_label = lv_label_create(screen->config_screen);
+    lv_label_set_text(temporary_label, "Infusion Rate:");
     osmi_roller_selector_create(screen->config_screen, &screen->infusion_rate, numeric_options, default_rates_units);
 
-    label = lv_label_create(screen->config_screen);
-    lv_label_set_text(label, "Infusion Volume:");
+    temporary_label = lv_label_create(screen->config_screen);
+    lv_label_set_text(temporary_label, "Infusion Volume:");
     osmi_roller_selector_create(screen->config_screen, &screen->infusion_volume, numeric_options, "ml");
 
-    // confirm setttings button.
-    screen->confirm_button = lv_btn_create(screen->config_screen);
+    // container for confirmation buttons.
+    lv_obj_t *button_container = lv_obj_create(screen->config_screen);
+    lv_obj_set_flex_flow(button_container, LV_FLEX_FLOW_ROW_REVERSE);
+    lv_obj_set_size(button_container, 200, 60);
+    lv_obj_clear_flag(button_container, LV_OBJ_FLAG_SCROLLABLE);
+
+    // confirm settings button.
+    screen->confirm_button = lv_btn_create(button_container);
     temporary_label = lv_label_create(screen->confirm_button);
     lv_label_set_text(temporary_label, "Confirm");
     lv_obj_center(temporary_label);
@@ -72,7 +90,7 @@ void create_config_screen(config_screen_t *screen)
 
     lv_style_set_bg_color(&cancel_style, lv_palette_main(LV_PALETTE_RED));
 
-    screen->cancel_button = lv_btn_create(screen->config_screen);
+    screen->cancel_button = lv_btn_create(button_container);
     // lv_obj_remove_style_all(cancel_button);
     lv_obj_add_style(screen->cancel_button, &cancel_style, 0);
     temporary_label = lv_label_create(screen->cancel_button);
