@@ -4,27 +4,20 @@
  * @brief Helper function for creating the OSMI control config screen.
  * @version 0.1
  * @date 2024-01-30
- * 
+ *
  * @copyright Copyright (c) 2024
- * 
+ *
  */
 #include "config_screen.h"
 #include "osmi_roller_selector.h"
 
-/**Static prototypes*/
-static lv_obj_t *config_screen;
 
-static osmi_roller_selector bolus_rate;
-static osmi_roller_selector infusion_rate;
-static osmi_roller_selector bolus_volume;
-static osmi_roller_selector infusion_volume;
 
-static lv_obj_t *confirm_button;
-static lv_obj_t *cancel_button;
+static void confirm_button_handler(lv_event_t *event) {
 
-static int cs_pointer_callback;
+}
 
-lv_obj_t *create_config_screen()
+void create_config_screen(config_screen_t* screen)
 {
     lv_obj_t *temporary_label;
     config_screen = lv_obj_create(NULL);
@@ -36,19 +29,38 @@ lv_obj_t *create_config_screen()
     const char *default_rates_units = "ml/sec\nml/min\nml/h";
 
     // create unit selectors.
+    //  For labels between objects.
+    lv_obj_t *label = lv_label_create(config_screen);
+    lv_label_set_text(label, "Bolus Rate:");
     osmi_roller_selector_create(config_screen, &bolus_rate, numeric_options, default_rates_units);
-    osmi_roller_selector_create(config_screen, &bolus_volume, numeric_options, "ml\n");
+
+    label = lv_label_create(config_screen);
+    lv_label_set_text(label, "Bolus Volume:");
+    osmi_roller_selector_create(config_screen, &bolus_volume, numeric_options, "ml");
+
+    label = lv_label_create(config_screen);
+    lv_label_set_text(label, "Infusion Rate:");
     osmi_roller_selector_create(config_screen, &infusion_rate, numeric_options, default_rates_units);
-    osmi_roller_selector_create(config_screen, &infusion_volume, numeric_options, "ml\n");
+
+    label = lv_label_create(config_screen);
+    lv_label_set_text(label, "Infusion Volume:");
+    osmi_roller_selector_create(config_screen, &infusion_volume, numeric_options, "ml");
 
     // confirm setttings button.
-
     confirm_button = lv_btn_create(config_screen);
     temporary_label = lv_label_create(confirm_button);
     lv_label_set_text(temporary_label, "Confirm");
     lv_obj_center(temporary_label);
 
+    // cancel settings change button.
+    static lv_style_t cancel_style;
+    lv_style_init(&cancel_style);
+
+    lv_style_set_bg_color(&cancel_style, lv_palette_main(LV_PALETTE_RED));
+
     cancel_button = lv_btn_create(config_screen);
+    // lv_obj_remove_style_all(cancel_button);
+    lv_obj_add_style(cancel_button, &cancel_style, 0);
     temporary_label = lv_label_create(cancel_button);
     lv_label_set_text(temporary_label, "Cancel");
     lv_obj_center(temporary_label);
