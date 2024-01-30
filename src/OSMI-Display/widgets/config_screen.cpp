@@ -1,3 +1,13 @@
+/**
+ * @file config_screen.cpp
+ * @author Jake Armstrong
+ * @brief Helper function for creating the OSMI control config screen.
+ * @version 0.1
+ * @date 2024-01-30
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
 #include "config_screen.h"
 #include "osmi_roller_selector.h"
 
@@ -16,11 +26,14 @@ static int cs_pointer_callback;
 
 lv_obj_t *create_config_screen()
 {
-    lv_obj_t* temporary_label;
+    lv_obj_t *temporary_label;
     config_screen = lv_obj_create(NULL);
     // configure screen layout.
     lv_obj_set_layout(config_screen, LV_LAYOUT_FLEX);
     lv_obj_set_flex_flow(config_screen, LV_FLEX_FLOW_COLUMN);
+
+    const char *numeric_options = "0\n1\n2\n3\n4\n5\n6\n7\n8\n9";
+    const char *default_rates_units = "ml/sec\nml/min\nml/h";
 
     // create unit selectors.
     osmi_roller_selector_create(config_screen, &bolus_rate, numeric_options, default_rates_units);
@@ -35,12 +48,10 @@ lv_obj_t *create_config_screen()
     lv_label_set_text(temporary_label, "Confirm");
     lv_obj_center(temporary_label);
 
-
     cancel_button = lv_btn_create(config_screen);
     temporary_label = lv_label_create(cancel_button);
     lv_label_set_text(temporary_label, "Cancel");
     lv_obj_center(temporary_label);
-
 
     return config_screen;
 }

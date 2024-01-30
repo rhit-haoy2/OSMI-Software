@@ -4,7 +4,7 @@
 #include <lvgl.h>
 #include "TFT_Config.h"
 #include "OSMI-Control/FluidDeliveryController.h"
-#include "widgets/config_screen.h"
+#include "./widgets/config_screen.h"
 
 #define SPI_DRIVER_CS 27
 #define MOTOR_PWM_PIN 26
