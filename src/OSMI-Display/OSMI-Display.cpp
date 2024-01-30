@@ -4,6 +4,7 @@
 #include <lvgl.h>
 #include "TFT_Config.h"
 #include "OSMI-Control/FluidDeliveryController.h"
+#include "widgets/config_screen.h"
 
 #define SPI_DRIVER_CS 27
 #define MOTOR_PWM_PIN 26
@@ -304,7 +305,8 @@ void DisplayTask(void *params)
     /*Register the driver in LVGL and save the created input device object*/
     my_indev = lv_indev_drv_register(&indev_drv);
 
-    
+    lv_obj_t* config = create_config_screen(); // temporarily load config screen as default screen.
+    lv_scr_load(config);
     
     while (true)
     {

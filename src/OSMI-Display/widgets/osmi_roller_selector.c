@@ -27,7 +27,7 @@ float osmi_roller_get_value(osmi_roller_selector *this)
     return this->value;
 }
 
-void osmi_roller_selector_create(lv_obj_t *parent, osmi_roller_selector *this, const char* numeric_options, char* unit_options)
+void osmi_roller_selector_create(lv_obj_t *parent, osmi_roller_selector *this, const char* numeric_options, const char* unit_options)
 {
     this->value = 0.0;
 

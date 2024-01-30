@@ -20,6 +20,8 @@
 #define DEBOUNCE_THRESHOLD 1000
 
 QueueHandle_t displayQueueHandle;
+static bool debouncing = false;
+static hw_timer_t* debounce_timer;
 
 /* End Toggle Button */
 
@@ -38,8 +40,6 @@ void initDebounceTimer()
 	timerAlarmEnable(debounce_timer);
 }
 
-bool debouncing = false;
-hw_timer_t *debounce_timer;
 /* ESTOP Setup */
 static void IRAM_ATTR ESTOP_ISR()
 {
