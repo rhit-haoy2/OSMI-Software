@@ -2,7 +2,6 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <lvgl.h>
-#include "demos/lv_demos.h"
 #include "TFT_Config.h"
 #include "OSMI-Control/FluidDeliveryController.h"
 
