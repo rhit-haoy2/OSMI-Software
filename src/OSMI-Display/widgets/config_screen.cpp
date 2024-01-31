@@ -21,7 +21,7 @@ static void confirm_button_handler(lv_event_t *event)
 
     char *buttons[1] = {"Ok", ""};
 
-    //Modal for alerts.
+    // Modal for alerts.
     lv_msgbox_create(NULL, "Alert", "You have started delivery", buttons, true);
     // todo add modal to show status.
     Serial.println("Start Button Pressed.");
