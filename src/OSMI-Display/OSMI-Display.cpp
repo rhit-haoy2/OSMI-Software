@@ -5,6 +5,7 @@
 #include "TFT_Config.h"
 #include "OSMI-Control/FluidDeliveryController.h"
 #include "./widgets/config_screen.h"
+#include "./widgets/status_screen.h"
 
 #define SPI_DRIVER_CS 27
 #define MOTOR_PWM_PIN 26
@@ -307,11 +308,23 @@ void DisplayTask(void *params)
 
 
     config_screen_t config_screen;
+    status_screen_t status_screen;
+    
+    status_screen.controller = controller;
+    status_screen.config_screen = &config_screen;
+    create_config_screen(&config_screen);
+
     config_screen.controller = controller;
-    config_screen.status_screen = NULL;
+    config_screen.status_screen = status_screen.status_screen;;
     create_config_screen(&config_screen); // temporarily load config screen as default screen.
 
+    
+    
+
+
+
     lv_scr_load(config_screen.config_screen);
+
     
     while (true)
     {
