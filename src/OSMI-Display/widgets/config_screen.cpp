@@ -13,20 +13,20 @@
 static void confirm_button_handler(lv_event_t *event)
 {
     config_screen_t *screen = (config_screen_t *)lv_obj_get_user_data(event->target);
-    // todo make sure values make sense.
 
     screen->controller->stopFlow();
-    screen->controller->configureDosage(screen->bolus_rate.value, screen->bolus_volume.value, screen->infusion_rate.value, screen->infusion_volume.value);
-    screen->controller->startFlow();
-
-    char *buttons[1] = {""};
+    int success = screen->controller->configureDosage(screen->bolus_rate.value, screen->bolus_volume.value, screen->infusion_rate.value, screen->infusion_volume.value);
 
     // Modal for alerts.
-    lv_msgbox_create(NULL, "Alert", "You have started delivery", NULL, true);
-    if (screen->status_screen != NULL)
+    if (success < 0)
+    {
+        lv_msgbox_create(NULL, "Alert", "Error in configuration for delivery.", NULL, true);
+    }
+    else if (screen->status_screen != NULL)
     {
         lv_scr_load(screen->status_screen);
     }
+    screen->controller->startFlow();
 }
 static void cancel_button_handler(lv_event_t *event)
 {

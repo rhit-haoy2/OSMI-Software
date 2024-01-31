@@ -143,7 +143,7 @@ float Team11Control::getVolumeDelivered()
 
 int Team11Control::configureDosage(float bolusRate, float bolusVolume, float infusionRate, float infusionVolume)
 {
-    if (bolusRate <= 0 || bolusVolume < 0 || infusionRate <= 0 || infusionVolume <= 0)
+    if (bolusRate < 0 || bolusVolume < 0 || infusionRate <= 0 || infusionVolume <= 0)
     {
         return -1;
     }
