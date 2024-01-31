@@ -266,7 +266,7 @@ void DisplayTask(void *params)
 
     tft.begin();
     /*TODO MOVE TO POST*/
-    readSetup(tft);
+    // readSetup(tft);
     /*END TODO*/
     tft.init();
 
