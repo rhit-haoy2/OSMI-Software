@@ -29,7 +29,7 @@ typedef struct
     lv_obj_t *confirm_button;
     lv_obj_t *cancel_button;
 
-    int cs_pointer_callback;
+    lv_obj_t *status_screen;
 } config_screen_t;
 
 /// @brief Create the screen config.

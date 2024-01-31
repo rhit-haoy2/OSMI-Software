@@ -305,15 +305,17 @@ void DisplayTask(void *params)
     /*Register the driver in LVGL and save the created input device object*/
     my_indev = lv_indev_drv_register(&indev_drv);
 
+
     config_screen_t config_screen;
     config_screen.controller = controller;
+    config_screen.status_screen = NULL;
     create_config_screen(&config_screen); // temporarily load config screen as default screen.
 
     lv_scr_load(config_screen.config_screen);
     
     while (true)
     {
-
+        ((ESP32PwmSpiDriver*)controller->getDriver())->occlusionDetected();
         lv_timer_handler();
         delay(15);
     }

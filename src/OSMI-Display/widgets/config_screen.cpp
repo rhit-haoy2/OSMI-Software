@@ -19,12 +19,11 @@ static void confirm_button_handler(lv_event_t *event)
     screen->controller->configureDosage(screen->bolus_rate.value, screen->bolus_volume.value, screen->infusion_rate.value, screen->infusion_volume.value);
     screen->controller->startFlow();
 
-    char *buttons[1] = {"Ok", ""};
+    char *buttons[1] = {""};
 
     // Modal for alerts.
-    lv_msgbox_create(NULL, "Alert", "You have started delivery", buttons, true);
-    // todo add modal to show status.
-    Serial.println("Start Button Pressed.");
+    lv_msgbox_create(NULL, "Alert", "You have started delivery", NULL, true);
+    lv_scr_load(screen->status_screen);
 }
 static void cancel_button_handler(lv_event_t *event)
 {
