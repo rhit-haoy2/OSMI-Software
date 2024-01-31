@@ -95,6 +95,8 @@ ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin
     ctrl4 = ctrl4 | 0x10;
     microStepperDriver.setReg(DRV8434SRegAddr::CTRL4, ctrl4); // enable open load detection.
 
+    microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep128);
+
     // todo configure step mode.
     Serial.print("Settings applied: ");
     Serial.println(microStepperDriver.verifySettings());
@@ -133,11 +135,11 @@ float ESP32PwmSpiDriver::getDistanceSteps(void)
 
 void ESP32PwmSpiDriver::enable()
 {
-    Serial.println("IMPLEMENT ESP32::enable!");
 
     pcnt_counter_resume(DEFAULT_PCNT_UNIT);
 
     // Re-enable driver.
+    microStepperDriver.clearFaults(); // Clear faults on the driver.
     microStepperDriver.enableDriver(); // Enable the driver.
     Serial.print("Enabling Driver: ");
     Serial.println(microStepperDriver.verifySettings());
@@ -215,6 +217,9 @@ bool ESP32PwmSpiDriver::occlusionDetected()
 
     Serial.print("Torque Threshold: ");
     Serial.println(torque);
+
+    Serial.print("Fault: ");
+    Serial.println(microStepperDriver.readFault());
 
     return torque <= threshold; // Torque approaches zero as more greatly loaded.
 }
