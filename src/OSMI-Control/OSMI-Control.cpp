@@ -23,7 +23,7 @@ void Team11ControlTask(void *parameters)
     while (1)
     {
         controlSystem->controlTaskUpdate();
-        delay(100);
+        delay(1000);
     }
 }
 
@@ -33,6 +33,7 @@ Team11Control::Team11Control(float volumePerDistance, FluidDeliveryDriver *drive
     this->p_Controller = FastPID(0, 0, 0, 1);
     this->driver = driver;
     this->volumePerDistance = volumePerDistance;
+    this->state = 0;
 
     // Create handle here with unique ID reference
     char identifier = (char)65 + ((unsigned int)this) % 29; // create id hash.
@@ -42,7 +43,7 @@ Team11Control::Team11Control(float volumePerDistance, FluidDeliveryDriver *drive
 
     // create task here with unique handle
     TaskHandle_t handle = 0;
-    xTaskCreate(Team11ControlTask, id.c_str(), 1000, this, 3, &handle); // returns success or fail. if fail should handle, but not now
+    xTaskCreate(Team11ControlTask, id.c_str(), 8000, this, 3, &handle); // returns success or fail. if fail should handle, but not now
     this->controlTask = handle;
 }
 
@@ -52,18 +53,20 @@ void Team11Control::controlTaskUpdate()
     float setpoint;
     float feedback = getVolumeDelivered();
     unsigned long currTime = millis() - startTime; // f*** the user timer
+    Serial.print("Task updating: ");
+    Serial.println(state);
 
     // Switch State
-    switch (state)
+    switch (this->state)
     {
     case 3: // Temporary stop infusion state.
         state = 0;
         break;
     case 2:                                           // infusion volume comparison.
-        state = (feedback >= infusionVolume) ? 0 : 3; // if feedback >= infusion max volume, go to stop state.
+        state = (feedback >= infusionVolume) ? 3 : 2; // if feedback >= infusion max volume, go to stop state.
         break;
     case 1: // bolus delivery
-        state = (feedback >= bolusVolume) ? 0 : 1;
+        state = (feedback >= bolusVolume) ? 2 : 1;
         break;
     case 0:
     default:
@@ -75,6 +78,7 @@ void Team11Control::controlTaskUpdate()
     {
     case 3: // temporary stop state.
         this->driver->disable();
+        Serial.println("Infusion Completed");
         this->state = 0;
         return;
     case 2: // infusion delivery
@@ -90,7 +94,10 @@ void Team11Control::controlTaskUpdate()
     }
 
     // Set velocity for cases 2 & 1.
+
     unsigned long long newSpeed = this->p_Controller.step(lroundf(setpoint), lroundf(feedback));
+    Serial.print("Control Task New Speed");
+    Serial.println(newSpeed);
     this->driver->setVelocity(newSpeed);
 }
 
@@ -104,11 +111,13 @@ bool Team11Control::startFlow()
 {
     driver->enable();
     startTime = millis();
+    this->state = 1;
     return true;
 }
 
 bool Team11Control::stopFlow()
 {
+    this->state = 3;
     driver->disable();
     return true;
 }
