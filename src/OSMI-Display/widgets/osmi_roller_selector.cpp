@@ -11,14 +11,24 @@ static void osmi_roller_event_handler(lv_event_t *event)
     osmi_roller_selector *selector = (osmi_roller_selector *)lv_event_get_user_data(event);
     if (selector == NULL)
         return;
-    printf("DEBUG: selector* %p", selector);
-    printf("DEBUG: selector->roller_tens: %p", selector->roller_tens);
     float tens = lv_roller_get_selected(selector->roller_tens);
     float ones = lv_roller_get_selected(selector->roller_ones);
     float tenths = lv_roller_get_selected(selector->roller_tenths);
 
     selector->value = (tens * 10) + ones + (tenths * 0.1);
-    // TODO Handle different units.
+
+    if (lv_roller_get_option_cnt(selector->roller_units) > 1) {
+        switch(lv_roller_get_selected(selector->roller_units)) {
+            case 0: // ml/sec
+                selector->value = selector->value * 60.0f;
+                break;
+            case 2: // ml / hr
+                selector->value = selector->value / 60.0f;
+                break;
+            default:
+                break;
+        }
+    }
 }
 
 float osmi_roller_get_value(osmi_roller_selector *selector)
@@ -50,7 +60,7 @@ void osmi_roller_selector_create(lv_obj_t *parent, osmi_roller_selector *selecto
     // Units roller settings.
     lv_roller_set_options(selector->roller_units, unit_options, LV_ROLLER_MODE_INFINITE);
     lv_roller_set_visible_row_count(selector->roller_units, 2);
-    lv_obj_add_flag(selector->roller_ones, LV_OBJ_FLAG_EVENT_BUBBLE); // required for proper event handling.
+    lv_obj_add_flag(selector->roller_units, LV_OBJ_FLAG_EVENT_BUBBLE); // required for proper event handling.
 
     // Numeric value settings.
     lv_roller_set_options(selector->roller_ones, numeric_options, LV_ROLLER_MODE_INFINITE);

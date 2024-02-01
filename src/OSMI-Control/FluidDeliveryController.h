@@ -15,8 +15,9 @@ typedef enum
 {
     limitStopped = -1,
     Stopped = 0,
-    Moving = 1,
-    Reversed = 2,
+    Bolus = 1,
+    Infusion = 2,
+    Dosage_Complete = 3
 
 } EspDriverStatus_t;
 
@@ -43,6 +44,9 @@ public:
 
     void disableInIsr();
     void setStepsInIsr(unsigned long long steps);
+
+    ///@brief do not use under normal circumstances.
+    void resetFeedback(void);
 
 private:
     int stepPin;

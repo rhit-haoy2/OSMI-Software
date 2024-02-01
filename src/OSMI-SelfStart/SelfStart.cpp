@@ -21,12 +21,10 @@ void SelfStartTestTask(void *params){
 
     switch (status)
     {
-    case EspDriverStatus_t::Moving:
+    case EspDriverStatus_t::Bolus:
+    case EspDriverStatus_t::Infusion:
         //Todo: display this on the screen instead of the Serial Monitor
         Serial.println("Last time still moving. Warning!!");
-        break;
-    case EspDriverStatus_t::Reversed:
-        Serial.println("Last time sucking blood. Warning!!");
         break;
     default:
         //Todo: modify main.cpp, pass in the display config

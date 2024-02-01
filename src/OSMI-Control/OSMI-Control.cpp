@@ -53,8 +53,6 @@ void Team11Control::controlTaskUpdate()
     float setpoint;
     float feedback = getVolumeDelivered();
     unsigned long currTime = millis() - startTime; // f*** the user timer
-    Serial.print("Task updating: ");
-    Serial.println(state);
 
     // Switch State
     switch (this->state)
@@ -95,10 +93,10 @@ void Team11Control::controlTaskUpdate()
 
     // Set velocity for cases 2 & 1.
 
-    unsigned long long newSpeed = this->p_Controller.step(lroundf(setpoint), lroundf(feedback));
-    Serial.print("Control Task New Speed");
-    Serial.println(newSpeed);
-    this->driver->setVelocity(newSpeed);
+    // unsigned long long newSpeed = this->p_Controller.step(lroundf(setpoint), lroundf(feedback));
+    // Serial.print("Control Task New Speed ");
+    // Serial.println(newSpeed);
+    // this->driver->setVelocity(newSpeed);
 }
 
 Team11Control::~Team11Control()
@@ -119,6 +117,10 @@ bool Team11Control::stopFlow()
 {
     this->state = 3;
     driver->disable();
+    float feedback = driver->getDistanceMm();
+    Serial.print("Moved: ");
+    Serial.print(feedback);
+    Serial.println(" mm");
     return true;
 }
 

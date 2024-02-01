@@ -1,7 +1,7 @@
-#include "OSMI-Control.h"
 #include "FluidDeliveryController.h"
 #include <driver/pcnt.h>
 #include <driver/gpio.h>
+#include <math.h>
 
 static const char *TAG = "ESP32PwmSpiDriver";
 static pcnt_config_t upConfig = {
@@ -82,7 +82,9 @@ ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin
     // Setup micro stepper
     microStepperDriver = DRV8434S();
     microStepperDriver.setChipSelectPin(chipSelectPin);
+
     this->stepPin = stepPin;
+    this->distancePerStepMm = distancePerStepMm;
 
     delay(1); // Allow for stepper to wake up.
 
@@ -97,7 +99,6 @@ ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin
     ctrl4 = ctrl4 | 0x10;
     microStepperDriver.setReg(DRV8434SRegAddr::CTRL4, ctrl4); // enable open load detection.
 
-    microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep128);
     microStepperDriver.setCurrentMilliamps(1000);
 
     // todo configure step mode.
@@ -111,7 +112,7 @@ ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin
     io_conf.mode = GPIO_MODE_INPUT;
     io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
     ESP_ERROR_CHECK(gpio_config(&io_conf));
-    gpio_install_isr_service(ESP_INTR_FLAG_HIGH);
+    gpio_install_isr_service(ESP_INTR_FLAG_LEVEL3);
     gpio_isr_handler_add((gpio_num_t)stopPin, limitISRHandler, (void *)this);
 
     // Setup Pulse Counter
@@ -139,14 +140,14 @@ void ESP32PwmSpiDriver::enable()
     pcnt_counter_resume(DEFAULT_PCNT_UNIT);
 
     // Re-enable driver.
-    microStepperDriver.clearFaults(); // Clear faults on the driver.
+    microStepperDriver.clearFaults();  // Clear faults on the driver.
     microStepperDriver.enableDriver(); // Enable the driver.
     Serial.print("Enabling Driver: ");
     Serial.println(microStepperDriver.verifySettings());
 
     // Enable PWM.
     analogWrite(stepPin, 128);
-    this->status = EspDriverStatus_t::Moving;
+    this->status = EspDriverStatus_t::Bolus;
 }
 
 /// @brief Disable the driver.
@@ -166,7 +167,7 @@ void ESP32PwmSpiDriver::disable()
 void ESP32PwmSpiDriver::setDirection(direction_t direction)
 {
     // Guard against changing directions while moving.
-    if (status == Moving)
+    if (status == Bolus)
         return;
 
     switch (direction)
@@ -231,9 +232,18 @@ void ESP32PwmSpiDriver::setStepsInIsr(unsigned long long steps)
     this->distanceSteps = steps;
 }
 
+/// @brief  Do not call under normal circumstances. See set steps in ISR.
+/// @param  void
+void ESP32PwmSpiDriver::resetFeedback(void)
+{
+    setStepsInIsr(0);
+}
+
 int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
 {
-    Serial.println("Setting Veloity");
+    Serial.print("Setting Velocity ");
+    Serial.print(mmPerMinute);
+    Serial.println(" mm/min");
     if (mmPerMinute < 0)
     {
         return -1;
@@ -243,41 +253,50 @@ int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
 
     // full winding step / second.
     float stepPerSecond = mmPerMinute * 60 / distancePerStepMm;
-    u_int8_t micro_phase = 0;
+    int micro_phase = 0;
 
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < 6; i++)
     {
-        if (stepPerSecond > 1000)
-            break; // double the step rate..
-        stepPerSecond *= 2;
+        if (stepPerSecond > 4000.0F)
+            break;
 
-        if (micro_phase == 0)
+        if (micro_phase <= 0)
         {
+            // double the step rate..
+            stepPerSecond = stepPerSecond * 2;
             micro_phase = 3;
         }
         else if (micro_phase >= 0b1010)
         {
-            micro_phase == 0b1010;
+            micro_phase = 0b1010;
         }
         else
         {
+            // double the step rate..
+            stepPerSecond = stepPerSecond * 2;
             micro_phase++;
         }
     }
 
-    int32_t herz = (int) stepPerSecond;
+    Serial.print("Step Per Second ");
+    Serial.println(stepPerSecond, 3);
+    uint32_t herz = round(stepPerSecond);
 
     if (herz <= 0)
     {
         ESP_LOGE(TAG, "Step-Hz less than zero: %.1f%%", stepPerSecond);
+        Serial.println("Herz less than zero!");
         return -1;
-    } else {
+    }
+    else
+    {
         stepPerSecond = 1000;
     }
-
-    ESP_LOGD("StepHz: %.1f%%", stepPerSecond);
     Serial.print("Stephz ");
     Serial.println(herz);
+    Serial.print("microphase ");
+    Serial.println(micro_phase);
+
     analogWriteFrequency(herz);
     this->microStepperDriver.setStepMode(micro_phase);
     return 0;

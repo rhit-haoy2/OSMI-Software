@@ -10,7 +10,7 @@
 #define SPI_DRIVER_CS 27
 #define MOTOR_PWM_PIN 26
 #define LIMIT_SWITCH_PIN 25
-#define DIST_PER_STEP 1.0
+#define DIST_PER_STEP 5.0F * 0.9F / 360.0F // 5mm / rev * 0.9 deg/step * 360 deg/rev = dist/step
 
 TFT_eSPI tft = TFT_eSPI();
 static Team11Control *controller;
@@ -51,145 +51,6 @@ void display_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color
     tft.endWrite();
 
     lv_disp_flush_ready(disp);
-}
-
-static void btn_event_Pause(lv_event_t *e)
-{
-    lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t *btn = lv_event_get_target(e);
-
-    if (code == LV_EVENT_CLICKED)
-    {
-
-        controller->stopFlow();
-
-        /*Get the first child of the button which is the label and change its text*/
-        lv_obj_t *label = lv_obj_get_child(btn, 0);
-        lv_label_set_text(statusLabel, "Paused");
-    }
-}
-
-static void btn_event_Start(lv_event_t *e)
-{
-    lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t *btn = lv_event_get_target(e);
-    if (code == LV_EVENT_CLICKED)
-    {
-
-        controller->startFlow();
-
-        /*Get the first child of the button which is the label and change its text*/
-        lv_label_set_text(statusLabel, "Delivering");
-    }
-}
-
-static void UpdateFlowText()
-{
-    controller->stopFlow();
-    std::string flowtext = "Rate: ";
-    char num[5];
-std:
-    sprintf(num, "%d ", flowrate);
-    flowtext += num;
-    switch (unit)
-    {
-    case 0:
-        flowtext += "ml/sec";
-        break;
-    case 1:
-        flowtext += "ml/min";
-        break;
-    case 2:
-        flowtext += "ml/h";
-        break;
-    default:
-        flowtext += "ml/sec";
-        break;
-    }
-    lv_label_set_text(rateLabel, flowtext.c_str());
-}
-
-static void UpdateRate(){
-    float rate = flowrate;
-    switch (unit)
-    {
-    case 0:
-        rate = rate*60;
-        break;
-    case 1:
-        rate = rate;
-        break;
-    case 2:
-        rate = rate/60.0;
-        break;
-    default:
-        break;
-    }
-    controller->setFlow(rate);
-}
-
-// static void btn_event_UpdateRate(lv_event_t *e)
-// {
-//     lv_event_code_t code = lv_event_get_code(e);
-//     lv_obj_t *btn = lv_event_get_target(e);
-//     if (code == LV_EVENT_CLICKED)
-//     {
-//         if (controller != nullptr)
-//         {
-//             controller->stopFlow();
-//             controller->setFlow(20);
-//             lv_obj_t *label = lv_obj_get_child(btn, 0);
-//             lv_label_set_text(rateLabel, lv_label_get_text(label));
-//         }
-//     }
-// }
-
-static void roller_event_UpdateRateHun(lv_event_t *e)
-{
-    lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t *obj = lv_event_get_target(e);
-    if (code == LV_EVENT_VALUE_CHANGED)
-    {
-        int hundreds = lv_roller_get_selected(obj);
-        flowrate = (flowrate % 100) + (hundreds * 100);
-        UpdateFlowText();
-    }
-}
-
-static void roller_event_UpdateRateTen(lv_event_t *e)
-{
-    lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t *obj = lv_event_get_target(e);
-    if (code == LV_EVENT_VALUE_CHANGED)
-    {
-        int tens = lv_roller_get_selected(obj);
-        flowrate = ((flowrate / 100) * 100) + tens * 10 + (flowrate % 10);
-        UpdateFlowText();
-    }
-}
-
-static void roller_event_UpdateRateOne(lv_event_t *e)
-{
-    lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t *obj = lv_event_get_target(e);
-    if (code == LV_EVENT_VALUE_CHANGED)
-    {
-        int ones = lv_roller_get_selected(obj);
-        flowrate = ((flowrate / 10) * 10) + ones;
-        UpdateFlowText();
-    }
-}
-
-static void roller_event_UpdateRateUnit(lv_event_t *e)
-{
-    lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t *obj = lv_event_get_target(e);
-    if (code == LV_EVENT_VALUE_CHANGED)
-    {
-        unit = lv_roller_get_selected(obj);
-        Serial.println(flowrate);
-        UpdateFlowText();
-    }
 }
 
 /// @brief Read touch input data from touchscreen.
@@ -330,6 +191,6 @@ void DisplayTask(void *params)
     {
         ((ESP32PwmSpiDriver*)controller->getDriver())->occlusionDetected();
         lv_timer_handler();
-        delay(15);
+        delay(60);
     }
 }
