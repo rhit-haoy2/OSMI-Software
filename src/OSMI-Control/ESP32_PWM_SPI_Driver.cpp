@@ -74,20 +74,21 @@ void ESP32PwmSpiDriver::initPWM(void)
     analogWriteFrequency(1000);
 }
 
-ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin, float distancePerStepMm)
+ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin, float pitch, float degreesPerStep)
 {
-    // Setup PWM
-    this->initPWM();
 
     // Setup micro stepper
     microStepperDriver = DRV8434S();
     microStepperDriver.setChipSelectPin(chipSelectPin);
 
     this->stepPin = stepPin;
-    this->distancePerStepMm = distancePerStepMm;
+    this->distancePerRotMm = pitch;
+    this->degreesPerStep = degreesPerStep;
 
     delay(1); // Allow for stepper to wake up.
 
+    // Setup PWM
+    this->initPWM();
     microStepperDriver.resetSettings();
     microStepperDriver.disableSPIStep(); // Ensure STEP pin is stepping.
 
@@ -124,13 +125,14 @@ float ESP32PwmSpiDriver::getDistanceMm()
     int16_t pulses = 0;
     pcnt_get_counter_value(DEFAULT_PCNT_UNIT, &pulses);
     unsigned long long steps = this->distanceSteps + pulses;
-    float distance = steps / distancePerStepMm;
+    float distance = steps / distancePerRotMm;
 
     return distance;
 }
 
 float ESP32PwmSpiDriver::getDistanceSteps(void)
 {
+    // TODO Factor in the microstep divider.
     return this->distanceSteps;
 }
 
@@ -214,7 +216,7 @@ bool ESP32PwmSpiDriver::occlusionDetected()
     // Get threshold if learnt.
     uint16_t thresh_low = microStepperDriver.driver.readReg(DRV8434SRegAddr::CTRL6);
     uint16_t thresh_high = microStepperDriver.driver.readReg(DRV8434SRegAddr::CTRL7) & 0x0F;
-    uint16_t threshold = (torque_high << 8) + torque_low;
+    uint16_t threshold = (thresh_high << 8) + thresh_low;
 
     return torque <= threshold; // Torque approaches zero as more greatly loaded.
 }
@@ -249,15 +251,16 @@ int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
         return -1;
     }
 
-    ESP_LOGD(TAG, "Setting Velocity: %.1f%%", mmPerMinute);
+    float distancePerStepMm = distancePerRotMm * degreesPerStep / 360.0F;
+
 
     // full winding step / second.
-    float stepPerSecond = mmPerMinute * 60 / distancePerStepMm;
+    float stepPerSecond = mmPerMinute * 60.0F / distancePerStepMm;
     int micro_phase = 0;
 
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < 7; i++)
     {
-        if (stepPerSecond > 4000.0F)
+        if (stepPerSecond >= 2000.0F)
             break;
 
         if (micro_phase <= 0)
@@ -285,13 +288,9 @@ int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
     if (herz <= 0)
     {
         ESP_LOGE(TAG, "Step-Hz less than zero: %.1f%%", stepPerSecond);
-        Serial.println("Herz less than zero!");
         return -1;
     }
-    else
-    {
-        stepPerSecond = 1000;
-    }
+
     Serial.print("Stephz ");
     Serial.println(herz);
     Serial.print("microphase ");

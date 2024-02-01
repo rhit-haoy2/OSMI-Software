@@ -25,7 +25,7 @@ typedef enum
 class ESP32PwmSpiDriver : public FluidDeliveryDriver
 {
 public:
-    ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin, float distancePerStepMm);
+    ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin, float pitch, float degreesPerStep);
 
     float getDistanceMm(void);
     float getDistanceSteps(void);
@@ -52,7 +52,8 @@ private:
     int stepPin;
     int stopPin;
     /// @brief Step is full winding step.
-    float distancePerStepMm;
+    float distancePerRotMm;
+    float degreesPerStep;
     unsigned long long distanceSteps;
     EspDriverStatus_t status;
     int inverseDirection = 0;

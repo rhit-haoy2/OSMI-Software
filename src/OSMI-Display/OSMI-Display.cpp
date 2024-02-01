@@ -10,7 +10,8 @@
 #define SPI_DRIVER_CS 27
 #define MOTOR_PWM_PIN 26
 #define LIMIT_SWITCH_PIN 25
-#define DIST_PER_STEP 5.0F * 0.9F / 360.0F // 5mm / rev * 0.9 deg/step * 360 deg/rev = dist/step
+#define PITCH 10.0F
+#define DEG_PER_STEP 0.9F
 
 TFT_eSPI tft = TFT_eSPI();
 static Team11Control *controller;
@@ -126,25 +127,13 @@ void touch_calibrate()
 void DisplayTask(void *params)
 {
 
+    ESP32PwmSpiDriver *driverInst = new ESP32PwmSpiDriver(SPI_DRIVER_CS, MOTOR_PWM_PIN, LIMIT_SWITCH_PIN, PITCH, DEG_PER_STEP);
+    controller = new Team11Control(1, (FluidDeliveryDriver *)driverInst);
+
     tft.begin();
-    /*TODO MOVE TO POST*/
-    // readSetup(tft);
-    /*END TODO*/
     tft.init();
-
-    // touch_calibrate();
-
     uint16_t calData[5] = {531, 3290, 415, 3480, 6};
     tft.setTouch(calData);
-
-    // Setup parameters.
-    display_config_t *handle = (display_config_t *)params;
-
-    FluidDeliveryDriver *driverInst = (FluidDeliveryDriver *)new ESP32PwmSpiDriver(SPI_DRIVER_CS, MOTOR_PWM_PIN, LIMIT_SWITCH_PIN, DIST_PER_STEP);
-    controller = new Team11Control(1, driverInst);
-    // Serial.printf("HandleDispAddress: %p\n", handle);
-    // Serial.printf("DriverDispAddress: %p\n", handle->driver);
-    // Serial.printf("QueueDispAddress: %p\n", handle->handle);
 
     lv_init();
 
@@ -167,30 +156,28 @@ void DisplayTask(void *params)
     /*Register the driver in LVGL and save the created input device object*/
     my_indev = lv_indev_drv_register(&indev_drv);
 
-
     config_screen_t config_screen;
-    status_screen_t status_screen;
-    
-    status_screen.controller = controller;
-    status_screen.config_screen = &config_screen;
+    // status_screen_t status_screen;
+
+    // status_screen.controller = controller;
+    // status_screen.config_screen = &config_screen;
     create_config_screen(&config_screen);
 
     config_screen.controller = controller;
-    config_screen.status_screen = status_screen.status_screen;;
-    create_config_screen(&config_screen); // temporarily load config screen as default screen.
-
-    
-    
-
-
+    // config_screen.status_screen = status_screen.status_screen;
 
     lv_scr_load(config_screen.config_screen);
 
-    
     while (true)
     {
-        ((ESP32PwmSpiDriver*)controller->getDriver())->occlusionDetected();
         lv_timer_handler();
-        delay(60);
+        bool detected = driverInst->occlusionDetected();
+        if (detected)
+        {
+            Serial.println("OCCLUSION");
+            driverInst->disable();
+        }
+
+        delay(500);
     }
 }
