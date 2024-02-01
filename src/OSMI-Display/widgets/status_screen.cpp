@@ -6,10 +6,31 @@ static void pause_button_handler(lv_event_t *event)
 {
     status_screen_t *screen = (status_screen_t *)lv_obj_get_user_data(event->target);
     screen->controller->stopFlow();
+    lv_timer_pause(screen->timer);
     Serial.println("Pause Button Pressed.");
 }
 
+void my_timer(lv_timer_t * timer)
+{
+    /*Use the user_data*/
+    status_screen_t * screen = (status_screen_t *)timer->user_data;
 
+    int i1 = lv_bar_get_value(screen->bolus_bar);
+    int i2 = lv_bar_get_value(screen->infusion_bar);
+    /*Do something with LVGL*/
+    if(i1<100){
+        i1+=5;
+        i2++;
+        lv_bar_set_value(screen->bolus_bar,i1,LV_ANIM_ON);
+        lv_bar_set_value(screen->infusion_bar,i2,LV_ANIM_ON);
+    }else if(i2<100){
+        i2++;
+        lv_bar_set_value(screen->infusion_bar,i2,LV_ANIM_ON);
+    }else{
+        lv_bar_set_value(screen->bolus_bar,0,LV_ANIM_OFF);
+        lv_bar_set_value(screen->infusion_bar,0,LV_ANIM_OFF);
+    }
+}
 
 void create_status_screen(status_screen_t *screen)
 {
@@ -42,51 +63,62 @@ void create_status_screen(status_screen_t *screen)
 
 
 
-
-    temporary_label = lv_label_create(screen->status_screen);
-    std::string volumetext = "Current Rate: ";
+    screen->currentrate_text = lv_label_create(screen->status_screen);
+    std::string ratetext = "Current Rate: ";
     char num[5];
 std:
     sprintf(num, "%f ",bolusrate);
-    volumetext += num;
-    lv_label_set_text(temporary_label, volumetext.c_str());
+    ratetext += num;
+    lv_label_set_text(screen->currentrate_text, ratetext.c_str());
 
     
     
-    temporary_label = lv_label_create(screen->status_screen);
+    screen->timeleft_text = lv_label_create(screen->status_screen);
     std::string timetext = "Time Left: estimate";
     float timeleft = (bolusvolume/bolusrate) + (infuvolume/infurate);
     sprintf(num, "%d ",timeleft);
-    volumetext += num;
+    timetext += num;
     sprintf(num, "sec");
-    volumetext += num;
-    lv_label_set_text(temporary_label, volumetext.c_str());
+    timetext += num;
+    lv_label_set_text(screen->timeleft_text, timetext.c_str());
 
-    temporary_label = lv_label_create(screen->status_screen);
+
+    lv_obj_t * all_bar_container = lv_obj_create(screen->status_screen);
+    lv_obj_set_flex_flow(all_bar_container, LV_FLEX_FLOW_ROW);
+    lv_obj_set_size(all_bar_container, 250, 250);
+
+    lv_obj_t * bolus_bar_container = lv_obj_create(all_bar_container);
+    lv_obj_set_flex_flow(bolus_bar_container, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_size(bolus_bar_container, 100, 220);
+
+    lv_obj_t * infusion_bar_container = lv_obj_create(all_bar_container);
+    lv_obj_set_flex_flow(infusion_bar_container, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_size(infusion_bar_container, 100, 220);
+
+
+    temporary_label = lv_label_create(bolus_bar_container);
     lv_label_set_text(temporary_label, "Bolus: ");
 
 
-    lv_obj_set_flex_flow(temporary_label, LV_FLEX_FLOW_ROW_REVERSE);
 
-    temporary_label = lv_label_create(screen->status_screen);
-    lv_label_set_text(temporary_label, "Infu: ");
-    lv_obj_set_flex_flow(temporary_label, LV_FLEX_FLOW_COLUMN);
+    temporary_label = lv_label_create(infusion_bar_container);
+    lv_label_set_text(temporary_label, "Infusion: ");
 
-    lv_obj_t * bar1 = lv_bar_create(screen->status_screen);
-    lv_obj_set_flex_flow(temporary_label, LV_FLEX_FLOW_ROW_REVERSE);
-    lv_obj_set_size(bar1, 20, 200);
-    lv_bar_set_value(bar1, 100, LV_ANIM_ON);
-    lv_bar_set_range(bar1, 0, 100);
-    float percent = currentvolume/bolusvolume;
-    lv_bar_set_value(bar1,percent,LV_ANIM_ON);
 
-    lv_obj_t * bar2 = lv_bar_create(screen->status_screen);
-    lv_obj_set_flex_flow(temporary_label, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_size(bar2, 20, 200);
-    lv_bar_set_value(bar2, 100, LV_ANIM_ON);
-    lv_bar_set_range(bar2, 0, 100);
+
+    screen->bolus_bar = lv_bar_create(bolus_bar_container);
+    lv_obj_set_size(screen->bolus_bar, 40, 140);
+    lv_bar_set_value(screen->bolus_bar, 100, LV_ANIM_ON);
+    lv_bar_set_range(screen->bolus_bar, 0, 100);
+    float percent = 0.0;
+    lv_bar_set_value(screen->bolus_bar,percent,LV_ANIM_ON);
+
+    screen->infusion_bar = lv_bar_create(infusion_bar_container);
+    lv_obj_set_size(screen->infusion_bar, 40, 140);
+    lv_bar_set_value(screen->infusion_bar, 100, LV_ANIM_ON);
+    lv_bar_set_range(screen->infusion_bar, 0, 100);
     percent = 0.0;
-    lv_bar_set_value(bar2,percent,LV_ANIM_ON);
+    lv_bar_set_value(screen->infusion_bar,percent,LV_ANIM_ON);
 
 
     lv_obj_t * pausebtn = lv_btn_create(screen->status_screen);
@@ -97,8 +129,8 @@ std:
 
 
 
-
-
+    static int user_data = 10;
+    screen->timer = lv_timer_create(my_timer, 1000,  screen);
 
 
 

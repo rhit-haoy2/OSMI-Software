@@ -13,7 +13,7 @@ typedef struct
     
     Team11Control* controller = NULL;
 
-    
+    lv_timer_t *timer;
 
     lv_obj_t *currentrate_text;
     lv_obj_t *timeleft_text;
@@ -28,8 +28,4 @@ typedef struct
 
 void create_status_screen(status_screen_t* screen_state);
 
-float status_screen_get_bolus_rate(status_screen_t* screen);
-float status_screen_get_bolus_volume(status_screen_t* screen);
-float status_screen_get_infusion_rate(status_screen_t* screen);
-float status_screen_get_infusion_volume(status_screen_t* screen);
 #endif

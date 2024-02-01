@@ -170,10 +170,6 @@ void DisplayTask(void *params)
 
     config_screen_t config_screen;
     status_screen_t status_screen;
-    
-    status_screen.controller = controller;
-    status_screen.config_screen = &config_screen;
-    create_config_screen(&config_screen);
 
     config_screen.controller = controller;
     config_screen.status_screen = status_screen.status_screen;;
@@ -181,15 +177,19 @@ void DisplayTask(void *params)
 
     
     
+    
+    status_screen.controller = controller;
+    status_screen.config_screen = &config_screen;
+    create_status_screen(&status_screen);
 
 
 
-    lv_scr_load(config_screen.config_screen);
+    lv_scr_load(status_screen.status_screen);
 
     
     while (true)
     {
-        ((ESP32PwmSpiDriver*)controller->getDriver())->occlusionDetected();
+        //((ESP32PwmSpiDriver*)controller->getDriver())->occlusionDetected();
         lv_timer_handler();
         delay(60);
     }
