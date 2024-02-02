@@ -128,6 +128,7 @@ void DisplayTask(void *params)
 {
 
     ESP32PwmSpiDriver *driverInst = new ESP32PwmSpiDriver(SPI_DRIVER_CS, MOTOR_PWM_PIN, LIMIT_SWITCH_PIN, PITCH, DEG_PER_STEP);
+    // delay(10000);
     controller = new Team11Control(1, (FluidDeliveryDriver *)driverInst);
 
     tft.begin();

@@ -28,7 +28,7 @@ static void confirm_button_handler(lv_event_t *event)
     }
     else if (screen->status_screen != NULL)
     {
-        lv_scr_load(screen->status_screen);
+        // lv_scr_load(screen->status_screen);
         screen->controller->startFlow();
     } else {
         screen->controller->startFlow();

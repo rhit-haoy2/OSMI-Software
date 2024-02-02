@@ -23,7 +23,7 @@ void Team11ControlTask(void *parameters)
     while (1)
     {
         controlSystem->controlTaskUpdate();
-        delay(1000);
+        delay(10000);
     }
 }
 
@@ -54,7 +54,8 @@ void Team11Control::controlTaskUpdate()
     float feedback = getVolumeDelivered();
     unsigned long currTime = millis() - startTime; // f*** the user timer
 
-    bool detected = driver->occlusionDetected();
+    // bool detected = driver->occlusionDetected();
+    bool detected = false;
     if (detected)
     {
         this->state = 4;
