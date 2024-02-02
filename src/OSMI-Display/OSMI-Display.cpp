@@ -160,17 +160,13 @@ void DisplayTask(void *params)
     status_screen_t status_screen;
 
     config_screen.controller = controller;
-    config_screen.status_screen = status_screen.status_screen;;
+    config_screen.status_screen = status_screen.status_screen;
+    
     create_config_screen(&config_screen); // temporarily load config screen as default screen.
 
-    
-    
-    
     status_screen.controller = controller;
     status_screen.config_screen = &config_screen;
     create_status_screen(&status_screen);
-
-
 
     lv_scr_load(config_screen.config_screen);
 
