@@ -23,50 +23,11 @@ QueueHandle_t displayQueueHandle;
 static bool debouncing = false;
 static hw_timer_t* debounce_timer;
 
-/* End Toggle Button */
-
-void IRAM_ATTR DebounceToggleISR()
-{
-	timerStop(debounce_timer);
-	debouncing = false;
-}
-
-void initDebounceTimer()
-{
-	debounce_timer = timerBegin(DEBOUNCE_TIMER_ID, DEBOUNCE_PRESCALE, true);
-	timerStop(debounce_timer);
-	timerAttachInterrupt(debounce_timer, &DebounceToggleISR, true);
-	timerAlarmWrite(debounce_timer, DEBOUNCE_THRESHOLD, true);
-	timerAlarmEnable(debounce_timer);
-}
-
-/* ESTOP Setup */
-static void IRAM_ATTR ESTOP_ISR()
-{
-	if (!debouncing)
-	{
-		timerRestart(debounce_timer);
-		timerStart(debounce_timer);
-		debouncing = true;
-
-		BaseType_t toBack = pdTRUE;
-		bool toggle = true;
-		xQueueSendFromISR(displayQueueHandle, &toggle, &toBack);
-	}
-}
-
 void setup(void)
 {
 	Serial.begin(115200);
 	Serial.println("[92mOSMI Startup[0m");
 	SPI.begin();
-
-	/** Pin Interrupt Setup*/
-	initDebounceTimer();
-
-	// Create ESTOP Interrupt.
-	pinMode(ESTOP_PIN, INPUT_PULLUP); // Set pin ESTOP_PIN to pullup input.
-	attachInterrupt(digitalPinToInterrupt(ESTOP_PIN), ESTOP_ISR, RISING);
 
 	// Create the communication lines between tasks. Usually only one number at a time.
 	displayQueueHandle = xQueueCreate(1, sizeof(int));

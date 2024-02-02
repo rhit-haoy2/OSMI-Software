@@ -72,6 +72,7 @@ void ESP32PwmSpiDriver::initPWM(void)
     pinMode(stepPin, ANALOG);
     analogWrite(stepPin, 0);
     analogWriteFrequency(1000);
+    analogWriteResolution(2);
 }
 
 ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin, float pitch, float degreesPerStep)
@@ -101,6 +102,7 @@ ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin
     microStepperDriver.setReg(DRV8434SRegAddr::CTRL4, ctrl4); // enable open load detection.
 
     microStepperDriver.setCurrentMilliamps(1000);
+    microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep32);
 
     // todo configure step mode.
     Serial.print("Settings applied: ");
@@ -144,11 +146,11 @@ void ESP32PwmSpiDriver::enable()
     // Re-enable driver.
     microStepperDriver.clearFaults();  // Clear faults on the driver.
     microStepperDriver.enableDriver(); // Enable the driver.
-    Serial.print("Enabling Driver: ");
+    Serial.print("Driver Ok: ");
     Serial.println(microStepperDriver.verifySettings());
 
     // Enable PWM.
-    analogWrite(stepPin, 128);
+    analogWrite(stepPin, 1);
     this->status = EspDriverStatus_t::Bolus;
 }
 
@@ -259,31 +261,8 @@ int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
 
 
     // full winding step / second.
-    float stepPerSecond = mmPerMinute * 60.0F / distancePerStepMm;
-    int micro_phase = 0;
-
-    for (int i = 0; i < 7; i++)
-    {
-        if (stepPerSecond >= 2000.0F)
-            break;
-
-        if (micro_phase <= 0)
-        {
-            // double the step rate..
-            stepPerSecond = stepPerSecond * 2;
-            micro_phase = 3;
-        }
-        else if (micro_phase >= 0b1010)
-        {
-            micro_phase = 0b1010;
-        }
-        else
-        {
-            // double the step rate..
-            stepPerSecond = stepPerSecond * 2;
-            micro_phase++;
-        }
-    }
+    float stepPerSecond = mmPerMinute * 32.0F / distancePerStepMm;
+    
 
     Serial.print("Step Per Second ");
     Serial.println(stepPerSecond, 3);
@@ -297,11 +276,8 @@ int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
 
     Serial.print("Stephz ");
     Serial.println(herz);
-    Serial.print("microphase ");
-    Serial.println(micro_phase);
 
     analogWriteFrequency(herz);
-    this->microStepperDriver.setStepMode(micro_phase);
     return 0;
 }
 
