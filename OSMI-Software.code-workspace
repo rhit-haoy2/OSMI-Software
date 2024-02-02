@@ -8,6 +8,9 @@
 		"cSpell.words": [
 			"pcnt",
 			"PCNT"
-		]
+		],
+		"files.associations": {
+			"new": "cpp"
+		}
 	}
 }

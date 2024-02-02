@@ -171,13 +171,7 @@ void DisplayTask(void *params)
     while (true)
     {
         lv_timer_handler();
-        bool detected = driverInst->occlusionDetected();
-        if (detected)
-        {
-            Serial.println("OCCLUSION");
-            driverInst->disable();
-        }
 
-        delay(500);
+        delay(50);
     }
 }

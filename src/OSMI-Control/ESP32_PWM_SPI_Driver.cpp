@@ -85,7 +85,7 @@ ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin
     this->distancePerRotMm = pitch;
     this->degreesPerStep = degreesPerStep;
 
-    delay(1); // Allow for stepper to wake up.
+    delay(5); // Allow for stepper to wake up.
 
     // Setup PWM
     this->initPWM();
@@ -212,11 +212,15 @@ bool ESP32PwmSpiDriver::occlusionDetected()
     uint16_t torque_low = microStepperDriver.driver.readReg(DRV8434SRegAddr::CTRL8);
     uint16_t torque_high = microStepperDriver.driver.readReg(DRV8434SRegAddr::CTRL9) & 0x0F;
     uint16_t torque = (torque_high << 8) + torque_low;
+    Serial.print("TRQ ");
+    Serial.println(torque);
 
     // Get threshold if learnt.
     uint16_t thresh_low = microStepperDriver.driver.readReg(DRV8434SRegAddr::CTRL6);
     uint16_t thresh_high = microStepperDriver.driver.readReg(DRV8434SRegAddr::CTRL7) & 0x0F;
     uint16_t threshold = (thresh_high << 8) + thresh_low;
+    Serial.print("Thresh: ");
+    Serial.println(threshold);
 
     return torque <= threshold; // Torque approaches zero as more greatly loaded.
 }

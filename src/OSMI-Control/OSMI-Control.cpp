@@ -54,6 +54,13 @@ void Team11Control::controlTaskUpdate()
     float feedback = getVolumeDelivered();
     unsigned long currTime = millis() - startTime; // f*** the user timer
 
+    bool detected = driver->occlusionDetected();
+    if (detected)
+    {
+        this->state = 4;
+        Serial.println("Occlusion detected.");
+    }
+
     // Switch State
     switch (this->state)
     {
