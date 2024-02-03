@@ -6,6 +6,7 @@
 #include "OSMI-Control/FluidDeliveryController.h"
 #include "./widgets/config_screen.h"
 #include "./widgets/status_screen.h"
+#include "./widgets/system_screen.h"
 
 #define SPI_DRIVER_CS 27
 #define MOTOR_PWM_PIN 26
@@ -159,6 +160,7 @@ void DisplayTask(void *params)
 
     config_screen_t config_screen;
     status_screen_t status_screen;
+    system_screen_t system_screen;
     
     
     status_screen.controller = controller;
@@ -170,9 +172,13 @@ void DisplayTask(void *params)
     
     create_config_screen(&config_screen); // temporarily load config screen as default screen.
 
+    system_screen.Driver = driverInst;
+    system_screen.config_screen = config_screen.config_screen;
+    system_screen.status_screen = status_screen.status_screen;
+    create_system_screen(&system_screen);
     
 
-    lv_scr_load(config_screen.config_screen);
+    lv_scr_load(system_screen.system_screen);
 
     while (true)
     {

@@ -201,6 +201,8 @@ void ESP32PwmSpiDriver::setDirection(direction_t direction)
         pcnt_unit_config(configs[inverseDirection]);
         microStepperDriver.setDirection(true);
     }
+    microStepperDriver.applySettings();
+    microStepperDriver.verifySettings();
 }
 
 direction_t ESP32PwmSpiDriver::getDirection(void)
@@ -273,7 +275,6 @@ int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
         return -1;
     }
 
-    microStepperDriver.setDirection(true);
     Serial.print("Direction: ");
     Serial.println(microStepperDriver.getDirection() ? "True" : "False");
     float distancePerStepMm = distancePerRotMm * degreesPerStep / 360.0F;
