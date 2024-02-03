@@ -8,8 +8,8 @@ static pcnt_config_t upConfig = {
     .ctrl_gpio_num = PCNT_PIN_NOT_USED,
     .pos_mode = PCNT_COUNT_INC,
     .neg_mode = PCNT_COUNT_DIS,
-    .counter_h_lim = (int16_t)0xffff - 1,
-    .counter_l_lim = -1,
+    .counter_h_lim = 32767,
+    .counter_l_lim = -32768,
     .unit = DEFAULT_PCNT_UNIT,
     .channel = PCNT_CHANNEL_0,
 };
@@ -18,8 +18,8 @@ static pcnt_config_t downConfig = {
     .ctrl_gpio_num = PCNT_PIN_NOT_USED,
     .pos_mode = PCNT_COUNT_DEC,
     .neg_mode = PCNT_COUNT_DIS,
-    .counter_h_lim = (int16_t)0xffff - 1,
-    .counter_l_lim = -1,
+    .counter_h_lim = 32767,
+    .counter_l_lim = -32768,
     .unit = DEFAULT_PCNT_UNIT,
     .channel = PCNT_CHANNEL_0,
 };
@@ -33,15 +33,16 @@ static void IRAM_ATTR handlePCNTOverflow(void *arg)
 {
     Serial.println("ESP32 PWM SPI Driver: implement PCNT Overflow.");
     ESP32PwmSpiDriver *driver = (ESP32PwmSpiDriver *)arg;
-    int16_t pcnt_steps = 0;
-    pcnt_get_counter_value(DEFAULT_PCNT_UNIT, &pcnt_steps);
-    if (pcnt_steps <= 0)
+
+    uint32_t pcnt_event;
+    pcnt_get_event_status(DEFAULT_PCNT_UNIT, &pcnt_event);
+    if (pcnt_event == PCNT_EVT_L_LIM)
     {
-        driver->setStepsInIsr(driver->getDistanceSteps() - 0xffff);
+        driver->setStepsInIsr(driver->getDistanceSteps() - 32768);
     }
-    else
+    else if (pcnt_event == PCNT_EVT_H_LIM)
     {
-        driver->setStepsInIsr(driver->getDistanceSteps() + 0xffff);
+        driver->setStepsInIsr(driver->getDistanceSteps() + 32767);
     }
 }
 
@@ -56,7 +57,9 @@ void ESP32PwmSpiDriver::initPulseCounter(void)
     // Config for the unit.
     upConfig.pulse_gpio_num = this->stepPin;
     downConfig.pulse_gpio_num = this->stepPin;
+
     pcnt_unit_config(&upConfig);
+    pcnt_counter_clear(DEFAULT_PCNT_UNIT);
     pcnt_counter_pause(DEFAULT_PCNT_UNIT);
     pcnt_event_enable(DEFAULT_PCNT_UNIT, PCNT_EVT_H_LIM);
     pcnt_event_enable(DEFAULT_PCNT_UNIT, PCNT_EVT_L_LIM);
@@ -90,6 +93,8 @@ ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin
 
     // Setup PWM
     this->initPWM();
+
+    // Microstepper Driver.
     microStepperDriver.resetSettings();
     microStepperDriver.disableSPIStep(); // Ensure STEP pin is stepping.
     microStepperDriver.enableSPIDirection();
@@ -101,7 +106,6 @@ ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin
     uint8_t ctrl6 = microStepperDriver.getCachedReg(DRV8434SRegAddr::CTRL6);
     ctrl6 = 1;
     microStepperDriver.setReg(DRV8434SRegAddr::CTRL6, ctrl6);
-
 
     uint8_t ctrl4 = microStepperDriver.getCachedReg(DRV8434SRegAddr::CTRL4);
     ctrl4 = ctrl4 | 0x10;
@@ -130,18 +134,20 @@ ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin
 
 float ESP32PwmSpiDriver::getDistanceMm()
 {
-    int16_t pulses = 0;
-    pcnt_get_counter_value(DEFAULT_PCNT_UNIT, &pulses);
-    unsigned long long steps = this->distanceSteps + pulses;
-    float distance = steps / distancePerRotMm;
+    unsigned long long steps = getDistanceSteps();
+    steps = steps / microStepSetting; // normalize to microsteps
+    // Steps to Rotation: 0.9 (deg / step) / 360 (deg / rot)
+    float distance = steps * 0.0025F / distancePerRotMm;
 
     return distance;
 }
 
-float ESP32PwmSpiDriver::getDistanceSteps(void)
+unsigned long long ESP32PwmSpiDriver::getDistanceSteps(void)
 {
     // TODO Factor in the microstep divider.
-    return this->distanceSteps;
+    int16_t distance = 0;
+    pcnt_get_counter_value(DEFAULT_PCNT_UNIT, &distance);
+    return this->distanceSteps + distance;
 }
 
 void ESP32PwmSpiDriver::enable()
@@ -154,18 +160,18 @@ void ESP32PwmSpiDriver::enable()
     microStepperDriver.enableDriver(); // Enable the driver.
     Serial.print("Driver Ok: ");
     bool ok = microStepperDriver.verifySettings();
-    if(!ok) {
+    if (!ok)
+    {
         microStepperDriver.applySettings();
     }
     Serial.println(microStepperDriver.verifySettings());
-
 
     // Enable PWM.
     analogWrite(stepPin, 1);
     this->status = EspDriverStatus_t::Moving;
     // Enable Stall Detection.
     uint8_t ctrl5 = microStepperDriver.getCachedReg(DRV8434SRegAddr::CTRL5);
-    microStepperDriver.setReg(DRV8434SRegAddr::CTRL5, ctrl5 ^ (1<<6));
+    microStepperDriver.setReg(DRV8434SRegAddr::CTRL5, ctrl5 ^ (1 << 6));
 }
 
 /// @brief Disable the driver.
@@ -279,64 +285,63 @@ int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
     Serial.println(microStepperDriver.getDirection() ? "True" : "False");
     float distancePerStepMm = distancePerRotMm * degreesPerStep / 360.0F;
 
-
     // full winding step / second.
     microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep1);
     float stepPerSecond = mmPerMinute / distancePerStepMm;
-    int microstepsetting = 1;
-    
-    if(stepPerSecond>=14000){
+    microStepSetting = 1;
+
+    if (stepPerSecond >= 14000)
+    {
         Serial.printf("Velocity Too high!Too Fast!");
-        Serial.printf("Stepshigh: %f",stepPerSecond,3);
+        Serial.printf("Stepshigh: %f", stepPerSecond, 3);
         return -1;
     }
-    while (stepPerSecond<=50)
+    while (stepPerSecond <= 50)
     {
-        stepPerSecond = stepPerSecond*2;
-        microstepsetting = microstepsetting*2;
-        if(microstepsetting>256){
-            Serial.printf("Velocity Too low!Too Slow!");
-            Serial.printf("Stepslow: %f",stepPerSecond,3);
+        stepPerSecond = stepPerSecond * 2;
+        microStepSetting = microStepSetting * 2;
+        if (microStepSetting > 256)
+        {
+            Serial.printf("Velocity Too low! Too Slow!");
+            Serial.printf("Stepslow: %f\n", stepPerSecond, 3);
             return -1;
         }
     }
-    switch(microstepsetting){
-        case 1:
-            break;
-        case 2:
-            microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep2);
-            break;
-        case 4:
-            microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep4);
-            break;
-        case 8:
-            microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep8);
-            break;
-        case 16:
-            microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep16);
-            break;
-        case 32:
-            microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep32);
-            break;
-        case 64:
-            microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep64);
-            break;
-        case 128:
-            microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep128);
-            break;
-        case 256:
-            microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep256);
-            break;
-        default:
-            break;
+    switch (microStepSetting)
+    {
+    case 1:
+        break;
+    case 2:
+        microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep2);
+        break;
+    case 4:
+        microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep4);
+        break;
+    case 8:
+        microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep8);
+        break;
+    case 16:
+        microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep16);
+        break;
+    case 32:
+        microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep32);
+        break;
+    case 64:
+        microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep64);
+        break;
+    case 128:
+        microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep128);
+        break;
+    case 256:
+        microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep256);
+        break;
+    default:
+        break;
     }
-    
-    stepPerSecond = mmPerMinute * microstepsetting / distancePerStepMm;
-    
 
+    stepPerSecond = mmPerMinute * microStepSetting / distancePerStepMm;
 
-
-    Serial.printf("Microstep: %d",microstepsetting);
+    Serial.printf("Microstep: %d", microStepSetting);
     Serial.print("Step Per Second ");
     Serial.println(stepPerSecond, 3);
     uint32_t herz = round(stepPerSecond);

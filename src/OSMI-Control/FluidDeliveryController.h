@@ -26,7 +26,7 @@ public:
     ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin, float pitch, float degreesPerStep);
 
     float getDistanceMm(void);
-    float getDistanceSteps(void);
+    unsigned long long getDistanceSteps(void);
 
     int setVelocity(float mmPerMinute);
     int getStatus(void);
@@ -49,13 +49,17 @@ public:
 private:
     int stepPin;
     int stopPin;
+
     /// @brief Step is full winding step.
     float distancePerRotMm;
     float degreesPerStep;
+    unsigned int microStepSetting;
     unsigned long long distanceSteps;
+
     EspDriverStatus_t status;
     int inverseDirection = 0;
     DRV8434S microStepperDriver;
+    
     void initPWM(void);
     void initPulseCounter(void);
 };
