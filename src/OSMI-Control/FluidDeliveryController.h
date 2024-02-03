@@ -15,9 +15,7 @@ typedef enum
 {
     limitStopped = -1,
     Stopped = 0,
-    Bolus = 1,
-    Infusion = 2,
-    Dosage_Complete = 3
+    Moving = 1,
 
 } EspDriverStatus_t;
 

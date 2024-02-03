@@ -162,7 +162,10 @@ void ESP32PwmSpiDriver::enable()
 
     // Enable PWM.
     analogWrite(stepPin, 1);
-    this->status = EspDriverStatus_t::Bolus;
+    this->status = EspDriverStatus_t::Moving;
+    // Enable Stall Detection.
+    uint8_t ctrl5 = microStepperDriver.getCachedReg(DRV8434SRegAddr::CTRL5);
+    microStepperDriver.setReg(DRV8434SRegAddr::CTRL5, ctrl5 ^ (1<<6));
 }
 
 /// @brief Disable the driver.
@@ -182,7 +185,7 @@ void ESP32PwmSpiDriver::disable()
 void ESP32PwmSpiDriver::setDirection(direction_t direction)
 {
     // Guard against changing directions while moving.
-    if (status == Bolus)
+    if (status == Moving)
         return;
 
     switch (direction)
