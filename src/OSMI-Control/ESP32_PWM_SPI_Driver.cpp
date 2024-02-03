@@ -251,6 +251,8 @@ void ESP32PwmSpiDriver::disableInIsr()
 {
     this->disable();
     this->status = limitStopped;
+    pcnt_counter_clear(DEFAULT_PCNT_UNIT);
+    this->distanceSteps = 0;
 }
 
 /// @brief sets the current number of steps from an ISR. Do not call this function in userspace.
