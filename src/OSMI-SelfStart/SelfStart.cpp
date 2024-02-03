@@ -21,11 +21,11 @@ void SelfStartTestTask(void *params){
 
     switch (status)
     {
-    case EspDriverStatus_t::Bolus:
-    case EspDriverStatus_t::Infusion:
+    case EspDriverStatus_t::Moving:
+    case EspDriverStatus_t::Stopped:
         //Todo: display this on the screen instead of the Serial Monitor
-        Serial.println("Last time still moving. Warning!!");
-        break;
+        //Serial.println("Last time still moving. Warning!!");
+        //break;
     default:
         //Todo: modify main.cpp, pass in the display config
         display_config_t *displayConfig = (display_config_t *) params;

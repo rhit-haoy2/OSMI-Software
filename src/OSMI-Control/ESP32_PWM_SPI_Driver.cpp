@@ -283,16 +283,19 @@ int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
     microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep1);
     float stepPerSecond = mmPerMinute / distancePerStepMm;
     int microstepsetting = 1;
+    
     if(stepPerSecond>=14000){
         Serial.printf("Velocity Too high!Too Fast!");
+        Serial.printf("Stepshigh: %f",stepPerSecond,3);
         return -1;
     }
-    while (stepPerSecond<=200)
+    while (stepPerSecond<=50)
     {
         stepPerSecond = stepPerSecond*2;
         microstepsetting = microstepsetting*2;
         if(microstepsetting>256){
             Serial.printf("Velocity Too low!Too Slow!");
+            Serial.printf("Stepslow: %f",stepPerSecond,3);
             return -1;
         }
     }

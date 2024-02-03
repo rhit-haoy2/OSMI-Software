@@ -14,20 +14,44 @@ void my_timer(lv_timer_t * timer)
     /*Use the user_data*/
     status_screen_t * screen = (status_screen_t *)timer->user_data;
 
-    int i1 = lv_bar_get_value(screen->bolus_bar);
-    int i2 = lv_bar_get_value(screen->infusion_bar);
+    float currentvolume = screen->controller->getVolumeDelivered();
+    float bolusvolume = config_screen_get_bolus_volume(screen->config_screen);
+    float infuvolume = config_screen_get_infusion_volume(screen->config_screen);
+    float bolusrate = config_screen_get_bolus_rate(screen->config_screen);
+    float infurate = config_screen_get_infusion_rate(screen->config_screen);
+
+
+    float boluspercent = currentvolume/bolusvolume;
+    float infupercent = currentvolume/infuvolume;
+    
     /*Do something with LVGL*/
-    if(i1<100){
-        i1+=5;
-        i2++;
+    if(boluspercent<1){
+        boluspercent = boluspercent*100;
+        infupercent = infupercent*100;
+        int i1 = round(boluspercent);
+        int i2 = round(infupercent);
         lv_bar_set_value(screen->bolus_bar,i1,LV_ANIM_ON);
         lv_bar_set_value(screen->infusion_bar,i2,LV_ANIM_ON);
-    }else if(i2<100){
-        i2++;
+
+        std::string ratetext = "Current Rate: ";
+        char num[32];
+        std:
+        sprintf(num, "%f ",bolusrate);
+        ratetext += num;
+        lv_label_set_text(screen->currentrate_text, ratetext.c_str());
+    }else if(infupercent<1){
+        infupercent = infupercent*100;
+        int i2 = round(infupercent);
+        lv_bar_set_value(screen->bolus_bar,100,LV_ANIM_ON);
         lv_bar_set_value(screen->infusion_bar,i2,LV_ANIM_ON);
+        std::string ratetext = "Current Rate: ";
+        char num[32];
+        sprintf(num, "%f ",infurate);
+        ratetext += num;
+        lv_label_set_text(screen->currentrate_text, ratetext.c_str());
     }else{
-        lv_bar_set_value(screen->bolus_bar,0,LV_ANIM_OFF);
-        lv_bar_set_value(screen->infusion_bar,0,LV_ANIM_OFF);
+        lv_bar_set_value(screen->bolus_bar,100,LV_ANIM_OFF);
+        lv_bar_set_value(screen->infusion_bar,100,LV_ANIM_OFF);
     }
 }
 
