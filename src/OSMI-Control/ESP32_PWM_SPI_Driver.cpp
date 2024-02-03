@@ -260,6 +260,7 @@ void ESP32PwmSpiDriver::resetFeedback(void)
 
 int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
 {
+
     Serial.print("Setting Velocity ");
     Serial.print(mmPerMinute);
     Serial.println(" mm/min");
@@ -276,9 +277,59 @@ int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
 
 
     // full winding step / second.
-    float stepPerSecond = mmPerMinute * 32.0F / distancePerStepMm;
+    microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep1);
+    float stepPerSecond = mmPerMinute / distancePerStepMm;
+    int microstepsetting = 1;
+    if(stepPerSecond>=14000){
+        Serial.printf("Velocity Too high!Too Fast!");
+        return -1;
+    }
+    while (stepPerSecond<=200)
+    {
+        stepPerSecond = stepPerSecond*2;
+        microstepsetting = microstepsetting*2;
+        if(microstepsetting>256){
+            Serial.printf("Velocity Too low!Too Slow!");
+            return -1;
+        }
+    }
+    switch(microstepsetting){
+        case 1:
+            break;
+        case 2:
+            microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep2);
+            break;
+        case 4:
+            microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep4);
+            break;
+        case 8:
+            microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep8);
+            break;
+        case 16:
+            microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep16);
+            break;
+        case 32:
+            microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep32);
+            break;
+        case 64:
+            microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep64);
+            break;
+        case 128:
+            microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep128);
+            break;
+        case 256:
+            microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep256);
+            break;
+        default:
+            break;
+    }
+    
+    stepPerSecond = mmPerMinute * microstepsetting / distancePerStepMm;
     
 
+
+
+    Serial.printf("Microstep: %d",microstepsetting);
     Serial.print("Step Per Second ");
     Serial.println(stepPerSecond, 3);
     uint32_t herz = round(stepPerSecond);
