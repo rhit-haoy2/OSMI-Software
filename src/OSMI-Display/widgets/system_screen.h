@@ -13,7 +13,7 @@ typedef struct
     lv_obj_t *status_screen;
     lv_obj_t *config_screen;
     
-    Team11Control* controller = NULL;
+    ESP32PwmSpiDriver* Driver = NULL;
 
     lv_timer_t *timer;
 

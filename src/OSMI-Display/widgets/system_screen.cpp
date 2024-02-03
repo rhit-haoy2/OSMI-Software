@@ -16,7 +16,18 @@ static void dossetEdit_button_handler(lv_event_t *event)
 
 static void resetinfu_button_handler(lv_event_t *event){
     system_screen_t *screen = (system_screen_t *)lv_obj_get_user_data(event->target);
-    screen->controller
+    lv_event_code_t code = lv_event_get_code(event);
+    if(code == LV_EVENT_PRESSED){
+        screen->Driver->disable();
+        screen->Driver->setDirection(Reverse);
+        screen->Driver->setVelocity(0.1);
+        screen->Driver->enable();
+    }else if(code == LV_EVENT_RELEASED){
+        screen->Driver->disable();
+        screen->Driver->setDirection(Depress);
+        
+    }
+    
 }
 
 void create_system_screen(system_screen_t *screen){
@@ -70,10 +81,11 @@ void create_system_screen(system_screen_t *screen){
     lv_obj_add_event_cb(screen->dossetEdit_button, dossetEdit_button_handler, LV_EVENT_RELEASED, screen);
 
     screen->resetinfu_button = lv_btn_create(screen->system_screen);
-    temporary_label = lv_label_create(screen->dossetEdit_button);
+    temporary_label = lv_label_create(screen->resetinfu_button);
     lv_label_set_text(temporary_label, "ResetSyringe");
     lv_obj_center(temporary_label);
-    lv_obj_set_user_data(screen->dossetEdit_button,screen);
+    lv_obj_set_user_data(screen->resetinfu_button,screen);
+    lv_obj_add_event_cb(screen->resetinfu_button, resetinfu_button_handler,LV_EVENT_ALL,screen);
 
 
     
