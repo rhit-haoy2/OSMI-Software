@@ -17,7 +17,8 @@ extern "C"
 #define MOTOR_ENABLED 128
 #define MOTOR_DISABLED 0
 
-typedef enum {
+typedef enum
+{
     Depress,
     Reverse,
 } direction_t;
@@ -33,7 +34,6 @@ struct
 class FluidDeliveryController
 {
 public:
-
     virtual bool startFlow() = 0;
     virtual bool stopFlow() = 0;
 
@@ -47,11 +47,10 @@ public:
     /// @brief get the total volume delivered from the controller.
     /// @return the volume delivered in mL.
     virtual float getVolumeDelivered() = 0;
-    
-    /// @brief Get the current status of the controller whether it's delivering, moving start/stopping.
-    /// @return 
-    virtual int getStatus() = 0;
 
+    /// @brief Get the current status of the controller whether it's delivering, moving start/stopping.
+    /// @return
+    virtual int getStatus() = 0;
 };
 
 /**
@@ -78,10 +77,7 @@ public:
     virtual void setDirection(direction_t direction) = 0;
     virtual direction_t getDirection(void) = 0;
 
-    bool occlusionDetected() {
-        return false;
-    }
-
+    virtual bool occlusionDetected() = 0;
 };
 
 #endif

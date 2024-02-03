@@ -17,6 +17,7 @@ static void confirm_button_handler(lv_event_t *event)
     screen->controller->stopFlow();
     int success = screen->controller->configureDosage(screen->bolus_rate.value, screen->bolus_volume.value, screen->infusion_rate.value, screen->infusion_volume.value);
     ESP32PwmSpiDriver* driver = (ESP32PwmSpiDriver*) screen->controller->getDriver();
+    Serial.printf("infusionratecheck:%f",config_screen_get_infusion_rate(screen));
     driver->setVelocity(config_screen_get_infusion_rate(screen));
     driver->resetFeedback(); //not recommended.
 
@@ -28,7 +29,7 @@ static void confirm_button_handler(lv_event_t *event)
     }
     else if (screen->status_screen != NULL)
     {
-        // lv_scr_load(screen->status_screen);
+        //lv_scr_load(screen->status_screen);
         screen->controller->startFlow();
     } else {
         screen->controller->startFlow();

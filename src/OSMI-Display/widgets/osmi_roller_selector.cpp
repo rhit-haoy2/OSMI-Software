@@ -41,7 +41,7 @@ void osmi_roller_selector_create(lv_obj_t *parent, osmi_roller_selector *selecto
     selector->value = 0.0;
 
     selector->container = lv_obj_create(parent);
-    lv_obj_set_size(selector->container, 180, 100);
+    lv_obj_set_size(selector->container, 220, 100);
     // Container flex allign settings.
     lv_obj_set_flex_flow(selector->container, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(selector->container, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_SPACE_EVENLY);

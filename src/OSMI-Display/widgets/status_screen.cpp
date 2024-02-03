@@ -6,7 +6,6 @@ static void pause_button_handler(lv_event_t *event)
 {
     status_screen_t *screen = (status_screen_t *)lv_obj_get_user_data(event->target);
     screen->controller->stopFlow();
-    lv_timer_pause(screen->timer);
     Serial.println("Pause Button Pressed.");
 }
 
@@ -66,7 +65,7 @@ void create_status_screen(status_screen_t *screen)
     screen->currentrate_text = lv_label_create(screen->status_screen);
     std::string ratetext = "Current Rate: ";
     char num[5];
-std:
+    std:
     sprintf(num, "%f ",bolusrate);
     ratetext += num;
     lv_label_set_text(screen->currentrate_text, ratetext.c_str());
@@ -75,7 +74,7 @@ std:
     
     screen->timeleft_text = lv_label_create(screen->status_screen);
     std::string timetext = "Time Left: estimate";
-    float timeleft = (bolusvolume/bolusrate) + (infuvolume/infurate);
+    float timeleft = (bolusvolume/bolusrate) + ((infuvolume-bolusvolume)/infurate);
     sprintf(num, "%d ",timeleft);
     timetext += num;
     sprintf(num, "sec");
@@ -121,11 +120,12 @@ std:
     lv_bar_set_value(screen->infusion_bar,percent,LV_ANIM_ON);
 
 
-    lv_obj_t * pausebtn = lv_btn_create(screen->status_screen);
-    temporary_label = lv_label_create(pausebtn);
+    screen->pause_button = lv_btn_create(screen->status_screen);
+    temporary_label = lv_label_create(screen->pause_button);
     lv_label_set_text(temporary_label, "Pause");
     lv_obj_center(temporary_label);
-    lv_obj_add_event_cb(pausebtn, pause_button_handler, LV_EVENT_RELEASED, screen);
+    lv_obj_set_user_data(screen->pause_button,screen);
+    lv_obj_add_event_cb(screen->pause_button, pause_button_handler, LV_EVENT_RELEASED, screen);
 
 
 
