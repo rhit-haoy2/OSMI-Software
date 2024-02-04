@@ -16,10 +16,7 @@ static void confirm_button_handler(lv_event_t *event)
 
     screen->controller->stopFlow();
     int success = screen->controller->configureDosage(screen->bolus_rate.value, screen->bolus_volume.value, screen->infusion_rate.value, screen->infusion_volume.value);
-    ESP32PwmSpiDriver* driver = (ESP32PwmSpiDriver*) screen->controller->getDriver();
-    Serial.printf("infusionratecheck:%f",config_screen_get_infusion_rate(screen));
-    driver->setVelocity(config_screen_get_infusion_rate(screen));
-    driver->resetFeedback(); //not recommended.
+    screen->controller->startFlow();
 
 
     // Modal for alerts.
@@ -41,6 +38,7 @@ static void cancel_button_handler(lv_event_t *event)
     // currently a makeshift stop button.
     screen->controller->stopFlow();
     Serial.println("Stop Button Pressed.");
+    lv_scr_load(screen->system_screen);
 }
 
 void create_config_screen(config_screen_t *screen)

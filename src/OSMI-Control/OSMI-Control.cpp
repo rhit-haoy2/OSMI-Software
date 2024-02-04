@@ -101,10 +101,10 @@ void Team11Control::controlTaskUpdate()
 
     // Set velocity for cases 2 & 1.
 
-    // unsigned long long newSpeed = this->p_Controller.step(lroundf(setpoint), lroundf(feedback));
-    // Serial.print("Control Task New Speed ");
-    // Serial.println(newSpeed);
-    // this->driver->setVelocity(newSpeed);
+    unsigned long long newSpeed = this->p_Controller.step(lroundf(setpoint), lroundf(feedback));
+    Serial.print("Control Task New Speed ");
+    Serial.println(newSpeed);
+    this->driver->setVelocity(newSpeed);
 }
 
 Team11Control::~Team11Control()

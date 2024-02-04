@@ -99,7 +99,7 @@ void create_system_screen(system_screen_t *screen){
     // container for entering other screens.
     lv_obj_t *systemsettings_container = lv_obj_create(screen->system_screen);
     lv_obj_set_flex_flow(systemsettings_container, LV_FLEX_FLOW_ROW);
-    lv_obj_set_size(systemsettings_container, 200, 30);
+    lv_obj_set_size(systemsettings_container, 230, 60);
 
 
     temporary_label = lv_label_create(systemsettings_container);
@@ -117,7 +117,7 @@ void create_system_screen(system_screen_t *screen){
 
     lv_obj_t *dossettings_container = lv_obj_create(screen->system_screen);
     lv_obj_set_flex_flow(dossettings_container, LV_FLEX_FLOW_ROW);
-    lv_obj_set_size(dossettings_container, 200, 30);
+    lv_obj_set_size(dossettings_container, 230, 60);
 
     temporary_label = lv_label_create(dossettings_container);
     lv_label_set_text(temporary_label, "Dosage Settings: ");

@@ -30,6 +30,7 @@ typedef struct
     lv_obj_t *cancel_button;
 
     lv_obj_t *status_screen;
+    lv_obj_t *system_screen;
 } config_screen_t;
 
 /// @brief Create the screen config.

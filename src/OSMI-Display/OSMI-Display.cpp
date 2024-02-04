@@ -176,6 +176,8 @@ void DisplayTask(void *params)
     system_screen.config_screen = config_screen.config_screen;
     system_screen.status_screen = status_screen.status_screen;
     create_system_screen(&system_screen);
+
+    config_screen.system_screen = system_screen.system_screen;
     
 
     lv_scr_load(system_screen.system_screen);
