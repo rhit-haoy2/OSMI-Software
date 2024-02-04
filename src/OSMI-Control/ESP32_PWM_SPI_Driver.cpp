@@ -84,6 +84,7 @@ void ESP32PwmSpiDriver::initPWM(void)
     // analogWriteFrequency(1000);
     // analogWriteResolution(8);
 
+    // See: https://www.esp32.com/viewtopic.php?t=18115
     ledc_timer_config_t timer;
     timer.timer_num = LEDC_TIMER_0;
     timer.speed_mode = LEDC_HIGH_SPEED_MODE;
