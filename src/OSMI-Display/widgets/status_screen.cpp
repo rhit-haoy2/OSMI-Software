@@ -21,8 +21,10 @@ void my_timer(lv_timer_t * timer)
     float bolusrate = config_screen_get_bolus_rate(screen->config_screen);
     float infurate = config_screen_get_infusion_rate(screen->config_screen);
 
-
-    float boluspercent = currentvolume/bolusvolume;
+    float boluspercent = 1;
+    if(bolusvolume!=0){
+        boluspercent = currentvolume/bolusvolume;
+    }
     float infupercent = currentvolume/infuvolume;
     
     /*Do something with LVGL*/
