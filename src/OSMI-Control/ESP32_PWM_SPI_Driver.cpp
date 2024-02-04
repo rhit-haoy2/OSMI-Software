@@ -147,7 +147,7 @@ unsigned long long ESP32PwmSpiDriver::getDistanceSteps(void)
     // TODO Factor in the microstep divider.
     int16_t distance = 0;
     pcnt_get_counter_value(DEFAULT_PCNT_UNIT, &distance);
-    return this->distanceSteps + distance;
+    return this->distanceSteps + (distance * 256 / microStepSetting);
 }
 
 void ESP32PwmSpiDriver::enable()
@@ -259,6 +259,8 @@ void ESP32PwmSpiDriver::disableInIsr()
 {
     this->disable();
     this->status = limitStopped;
+    pcnt_counter_clear(DEFAULT_PCNT_UNIT);
+    this->distanceSteps = 0;
 }
 
 /// @brief sets the current number of steps from an ISR. Do not call this function in userspace.
@@ -302,6 +304,7 @@ int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
         Serial.printf("Stepshigh: %f", stepPerSecond, 3);
         return -1;
     }
+
     while (stepPerSecond <= 50)
     {
         stepPerSecond = stepPerSecond * 2;
@@ -309,13 +312,15 @@ int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
         if (microStepSetting > 256)
         {
             Serial.printf("Velocity Too low! Too Slow!");
-            Serial.printf("Stepslow: %f\n", stepPerSecond, 3);
+            Serial.printf(" %f Hz\n", stepPerSecond, 3);
             return -1;
         }
     }
+
     switch (microStepSetting)
     {
     case 1:
+        microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep1);
         break;
     case 2:
         microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep2);
@@ -357,10 +362,7 @@ int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
         ESP_LOGE(TAG, "Step-Hz less than zero: %.1f%%", stepPerSecond);
         return -1;
     }
-
-    Serial.print("Stephz ");
-    Serial.println(herz);
-
+    
     analogWriteFrequency(herz);
     return 0;
 }

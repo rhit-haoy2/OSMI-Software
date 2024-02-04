@@ -54,6 +54,8 @@ private:
     float distancePerRotMm;
     float degreesPerStep;
     unsigned int microStepSetting;
+
+    // Distance in maximum microsteps (256). 
     unsigned long long distanceSteps;
 
     EspDriverStatus_t status;
