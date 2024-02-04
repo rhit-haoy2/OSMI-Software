@@ -16,6 +16,7 @@ static void confirm_button_handler(lv_event_t *event)
 
     screen->controller->stopFlow();
     int success = screen->controller->configureDosage(screen->bolus_rate.value, screen->bolus_volume.value, screen->infusion_rate.value, screen->infusion_volume.value);
+    screen->controller->getDriver()->setDirection(Depress);
     screen->controller->startFlow();
 
 
@@ -26,7 +27,7 @@ static void confirm_button_handler(lv_event_t *event)
     }
     else if (screen->status_screen != NULL)
     {
-        //lv_scr_load(screen->status_screen);
+        lv_scr_load(screen->status_screen);
         screen->controller->startFlow();
     } else {
         screen->controller->startFlow();
