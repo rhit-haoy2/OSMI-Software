@@ -155,7 +155,7 @@ unsigned long long ESP32PwmSpiDriver::getDistanceSteps(void)
 {
     int16_t distance = 0;
     Serial.print("Counter Value Success: ");
-    Serial.println(pcnt_get_counter_value(DEFAULT_PCNT_UNIT, &distance));
+    Serial.println(pcnt_get_counter_value(DEFAULT_PCNT_UNIT, &distance) == ESP_OK);
     return this->distanceSteps + (distance * 256 / microStepSetting);
 }
 
