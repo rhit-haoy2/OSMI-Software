@@ -6,20 +6,24 @@
 static const char *TAG = "ESP32PwmSpiDriver";
 static pcnt_config_t upConfig = {
     .ctrl_gpio_num = PCNT_PIN_NOT_USED,
+    .lctrl_mode = PCNT_MODE_KEEP,
+    .hctrl_mode = PCNT_MODE_KEEP,
     .pos_mode = PCNT_COUNT_INC,
     .neg_mode = PCNT_COUNT_DIS,
     .counter_h_lim = 32767,
-    .counter_l_lim = -32768,
+    .counter_l_lim = -1,
     .unit = DEFAULT_PCNT_UNIT,
     .channel = PCNT_CHANNEL_0,
 };
 
 static pcnt_config_t downConfig = {
     .ctrl_gpio_num = PCNT_PIN_NOT_USED,
+    .lctrl_mode = PCNT_MODE_KEEP,
+    .hctrl_mode = PCNT_MODE_KEEP,
     .pos_mode = PCNT_COUNT_DEC,
     .neg_mode = PCNT_COUNT_DIS,
     .counter_h_lim = 32767,
-    .counter_l_lim = -32768,
+    .counter_l_lim = -1,
     .unit = DEFAULT_PCNT_UNIT,
     .channel = PCNT_CHANNEL_0,
 };
@@ -59,12 +63,14 @@ void ESP32PwmSpiDriver::initPulseCounter(void)
 
     Serial.print("PCNT Configured: ");
     Serial.println(pcnt_unit_config(&downConfig) == ESP_OK);
-    
-    pcnt_counter_pause(DEFAULT_PCNT_UNIT);
-    pcnt_counter_clear(DEFAULT_PCNT_UNIT);
+
+    pcnt_filter_disable(DEFAULT_PCNT_UNIT);
     pcnt_event_enable(DEFAULT_PCNT_UNIT, PCNT_EVT_H_LIM);
     pcnt_event_enable(DEFAULT_PCNT_UNIT, PCNT_EVT_L_LIM);
+    pcnt_counter_pause(DEFAULT_PCNT_UNIT);
+    pcnt_counter_clear(DEFAULT_PCNT_UNIT);
     pcnt_isr_register(handlePCNTOverflow, this, 0, &isrHandle);
+    pcnt_intr_enable(DEFAULT_PCNT_UNIT);
 }
 
 /// @brief Setup PWM channel.
@@ -73,10 +79,38 @@ void ESP32PwmSpiDriver::initPulseCounter(void)
 /// ESP_ERROR_CHECK(ledc_update_duty(PWM_SPEED, PWM_CHANNEL));
 void ESP32PwmSpiDriver::initPWM(void)
 {
-    pinMode(stepPin, ANALOG);
-    analogWrite(stepPin, 0);
-    analogWriteFrequency(1000);
-    analogWriteResolution(8);
+    // pinMode(stepPin, ANALOG);
+    // analogWrite(stepPin, 0);
+    // analogWriteFrequency(1000);
+    // analogWriteResolution(8);
+
+    ledc_timer_config_t timer;
+    timer.timer_num = LEDC_TIMER_0;
+    timer.speed_mode = LEDC_HIGH_SPEED_MODE;
+    timer.freq_hz = 60000;
+    timer.duty_resolution = LEDC_TIMER_8_BIT;
+    timer.clk_cfg = LEDC_AUTO_CLK;
+
+    Serial.print("Timer Config OK: ");
+    Serial.println(ledc_timer_config(&timer) == ESP_OK ? "True" : "False");
+
+    ledc_channel_config_t channel;
+    channel.channel = LEDC_CHANNEL_0;
+    channel.gpio_num = stepPin;
+    channel.duty = 0;
+    channel.hpoint = 0;
+    channel.intr_type = LEDC_INTR_DISABLE;
+    channel.speed_mode = LEDC_HIGH_SPEED_MODE;
+    channel.timer_sel = LEDC_TIMER_0;
+
+    Serial.print("Channel Config OK: ");
+    Serial.println(ledc_channel_config(&channel) == ESP_OK ? "True" : "False");
+
+    // Setup Pulse Counter
+    initPulseCounter();
+
+    gpio_set_direction((gpio_num_t)stepPin, GPIO_MODE_INPUT_OUTPUT);
+    gpio_matrix_out(stepPin, LEDC_HS_SIG_OUT0_IDX + LEDC_CHANNEL_0, 0, 0);
 }
 
 ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin, float pitch, float degreesPerStep)
@@ -130,9 +164,6 @@ ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin
     ESP_ERROR_CHECK(gpio_config(&io_conf));
     gpio_install_isr_service(ESP_INTR_FLAG_LEVEL3);
     gpio_isr_handler_add((gpio_num_t)stopPin, limitISRHandler, (void *)this);
-
-    // Setup Pulse Counter
-    initPulseCounter();
 }
 
 /// @brief Get the distance (in mm) away from the endstop.
@@ -142,8 +173,6 @@ float ESP32PwmSpiDriver::getDistanceMm()
     unsigned long long steps = getDistanceSteps();
     // Steps to Rotation: 0.9 (deg / step) / 360 (deg / rot) / 256 uSteps / step
     float distance = steps * 0.000009765625F / distancePerRotMm;
-    Serial.print("distance mm: ");
-    Serial.println(distance);
 
     return distance;
 }
@@ -153,16 +182,16 @@ float ESP32PwmSpiDriver::getDistanceMm()
 /// @return Distance in 256 microsteps / actual step.
 unsigned long long ESP32PwmSpiDriver::getDistanceSteps(void)
 {
-    int16_t distance = 0;
-    Serial.print("Counter Value Success: ");
-    Serial.println(pcnt_get_counter_value(DEFAULT_PCNT_UNIT, &distance) == ESP_OK);
+    int16_t distance = 69;
+    pcnt_get_counter_value(DEFAULT_PCNT_UNIT, &distance);
     return this->distanceSteps + (distance * 256 / microStepSetting);
 }
 
 void ESP32PwmSpiDriver::enable()
 {
 
-    pcnt_counter_resume(DEFAULT_PCNT_UNIT);
+    Serial.print("Pulse counter resumed: ");
+    Serial.println(pcnt_counter_resume(DEFAULT_PCNT_UNIT) == ESP_OK ? "True" : "False");
 
     // Re-enable driver.
     microStepperDriver.clearFaults();  // Clear faults on the driver.
