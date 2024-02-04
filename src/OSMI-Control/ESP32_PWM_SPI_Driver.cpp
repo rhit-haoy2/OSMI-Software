@@ -6,7 +6,7 @@
 static const char *TAG = "ESP32PwmSpiDriver";
 static pcnt_config_t upConfig = {
     .ctrl_gpio_num = PCNT_PIN_NOT_USED,
-    .pos_mode = PCNT_COUNT_INC,
+    .pos_mode = PCNT_COUNT_DEC,
     .neg_mode = PCNT_COUNT_DIS,
     .counter_h_lim = 32767,
     .counter_l_lim = -32768,
@@ -16,7 +16,7 @@ static pcnt_config_t upConfig = {
 
 static pcnt_config_t downConfig = {
     .ctrl_gpio_num = PCNT_PIN_NOT_USED,
-    .pos_mode = PCNT_COUNT_DEC,
+    .pos_mode = PCNT_COUNT_INC,
     .neg_mode = PCNT_COUNT_DIS,
     .counter_h_lim = 32767,
     .counter_l_lim = -32768,
@@ -88,6 +88,8 @@ ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin
     this->stepPin = stepPin;
     this->distancePerRotMm = pitch;
     this->degreesPerStep = degreesPerStep;
+    this->distanceSteps = 10240000; // set to 0 when done.
+    this->microStepSetting = 1;
 
     delay(5); // Allow for stepper to wake up.
 
@@ -132,19 +134,24 @@ ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin
     initPulseCounter();
 }
 
+/// @brief Get the distance (in mm) away from the endstop.
+/// @return distance (in mm) away from end stop.
 float ESP32PwmSpiDriver::getDistanceMm()
 {
     unsigned long long steps = getDistanceSteps();
-    steps = steps / microStepSetting; // normalize to microsteps
-    // Steps to Rotation: 0.9 (deg / step) / 360 (deg / rot)
-    float distance = steps * 0.0025F / distancePerRotMm;
+    // Steps to Rotation: 0.9 (deg / step) / 360 (deg / rot) / 256 uSteps / step
+    float distance = steps * 0.000009765625F / distancePerRotMm;
+    Serial.print("distance mm: ");
+    Serial.println(distance);
 
     return distance;
 }
 
+/// @brief Get the distance in micro-steps.
+/// @param  void
+/// @return Distance in 256 microsteps / actual step.
 unsigned long long ESP32PwmSpiDriver::getDistanceSteps(void)
 {
-    // TODO Factor in the microstep divider.
     int16_t distance = 0;
     pcnt_get_counter_value(DEFAULT_PCNT_UNIT, &distance);
     return this->distanceSteps + (distance * 256 / microStepSetting);
@@ -169,7 +176,12 @@ void ESP32PwmSpiDriver::enable()
     // Enable PWM.
     analogWrite(stepPin, 1);
     this->status = EspDriverStatus_t::Moving;
-    // Enable Stall Detection.
+
+    // set stall threshold to 0 while learning.
+    microStepperDriver.driver.writeReg(DRV8434SRegAddr::CTRL6, 0);
+    microStepperDriver.driver.writeReg(DRV8434SRegAddr::CTRL7, 0);
+
+    // Enable Stall Detection learning.
     uint8_t ctrl5 = microStepperDriver.getCachedReg(DRV8434SRegAddr::CTRL5);
     microStepperDriver.setReg(DRV8434SRegAddr::CTRL5, ctrl5 ^ (1 << 6));
 }
@@ -191,7 +203,8 @@ void ESP32PwmSpiDriver::disable()
 void ESP32PwmSpiDriver::setDirection(direction_t direction)
 {
     // Guard against changing directions while moving.
-    if (status == Moving) {
+    if (status == Moving)
+    {
         Serial.println("Cannot change direction while moving.");
         return;
     }
@@ -352,7 +365,7 @@ int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
 
     stepPerSecond = mmPerMinute * microStepSetting / distancePerStepMm;
 
-    Serial.printf("Microstep: %d", microStepSetting);
+    Serial.printf("Microstep: %d\n", microStepSetting);
     Serial.print("Step Per Second ");
     Serial.println(stepPerSecond, 3);
     uint32_t herz = round(stepPerSecond);
@@ -362,7 +375,7 @@ int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
         ESP_LOGE(TAG, "Step-Hz less than zero: %.1f%%", stepPerSecond);
         return -1;
     }
-    
+
     analogWriteFrequency(herz);
     return 0;
 }

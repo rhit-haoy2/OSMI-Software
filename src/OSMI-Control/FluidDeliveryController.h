@@ -110,17 +110,24 @@ public:
 private:
     // Task Handle here.
 
-    FastPID p_Controller;
+    FastPID *p_Controller;
     FluidDeliveryDriver *driver;
     TaskHandle_t controlTask;
     float volumePerDistance;
+
+    float kP;
+    float kI;
+    float kD;
+
     float bolusRate = -1;
     float bolusVolume = -1;
     float infusionRate = -1;
     float infusionVolume = -1;
     float prevBolusVolume = 0;
     float currBolusVolume = 0;
+
     unsigned long startTime = 0;
+    unsigned long startPosition = 0;
     int state;
 };
 

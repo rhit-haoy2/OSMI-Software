@@ -11,6 +11,8 @@
 #define GROUP timer_group_t::TIMER_GROUP_0
 #define TIMER timer_idx_t::TIMER_1
 
+#define CONTROL_FREQ 10
+
 #define TIMER_DIVIDER 8
 #define TIMER_SCALE (TIMER_BASE_CLK / TIMER_DIVIDER)
 
@@ -23,14 +25,17 @@ void Team11ControlTask(void *parameters)
     while (1)
     {
         controlSystem->controlTaskUpdate();
-        delay(100);
+        delay(1000 / CONTROL_FREQ);
     }
 }
 
 Team11Control::Team11Control(float volumePerDistance, FluidDeliveryDriver *driver)
 {
     // TODO setup p_controller with appropriate values.
-    this->p_Controller = FastPID(0.8, 0, 0, 1);
+    this->kP = 1.1;
+    this->kI = 0 * CONTROL_FREQ;
+    this->kD = 0 * CONTROL_FREQ;
+
     this->driver = driver;
     this->volumePerDistance = volumePerDistance;
     this->state = 0;
@@ -50,12 +55,21 @@ Team11Control::Team11Control(float volumePerDistance, FluidDeliveryDriver *drive
 void Team11Control::controlTaskUpdate()
 {
 
-    float setpoint;
-    unsigned long currTime = millis() - startTime; // f*** the user timer
-    float feedback = this->driver->getDistanceMm() / currTime;
+    float setpoint_mm_per_ms;
+    // global start time (no bolus)
+    unsigned long curr_time_ms = millis() - startTime; // f*** the user timer 
+
+    // time after bolus.
+    if (state == 2)
+    {
+        curr_time_ms - (bolusVolume * 1000 / bolusRate); // calculate current time is in ms.
+    }
+
+    float feedback_mm = startPosition - this->driver->getDistanceMm();
+    float feedback_mm_per_ms = (feedback_mm) * 1000 / curr_time_ms;
 
     bool detected = driver->occlusionDetected();
-    // bool detected = false;
+
     if (detected)
     {
         this->state = 4;
@@ -68,11 +82,11 @@ void Team11Control::controlTaskUpdate()
     case 3: // Temporary stop infusion state.
         state = 0;
         break;
-    case 2:                                           // infusion volume comparison.
-        state = (feedback >= infusionVolume) ? 3 : 2; // if feedback >= infusion max volume, go to stop state.
+    case 2:                                                                    // infusion volume comparison.
+        state = ((feedback_mm * volumePerDistance) >= infusionVolume) ? 3 : 2; // if feedback >= infusion max volume, go to stop state.
         break;
     case 1: // bolus delivery
-        state = (feedback >= bolusVolume) ? 2 : 1;
+        state = ((feedback_mm * volumePerDistance) >= bolusVolume) ? 2 : 1;
         break;
     case 0:
     default:
@@ -82,16 +96,19 @@ void Team11Control::controlTaskUpdate()
     // Action Based on State
     switch (state)
     {
+    case 4:
+        this->driver->disable();
+        return;
     case 3: // temporary stop state.
         this->driver->disable();
         Serial.println("Infusion Completed");
         this->state = 0;
         return;
     case 2: // infusion delivery
-        setpoint = infusionRate;
+        setpoint_mm_per_ms = infusionRate / 60 * 1000 / volumePerDistance;
         break;
     case 1: // bolus delivery
-        setpoint = bolusRate;
+        setpoint_mm_per_ms = bolusRate / 60 * 1000 / volumePerDistance;
         break;
 
     case 0:
@@ -100,10 +117,21 @@ void Team11Control::controlTaskUpdate()
     }
 
     // Set velocity for cases 2 & 1.
-    unsigned long long newSpeed = this->p_Controller.step(lroundf(setpoint), lroundf(feedback));
+
+    float err = setpoint_mm_per_ms - feedback_mm_per_ms;
+    
+    unsigned long long new_speed_mm_per_min = err*kP + err*kI + err*kD;
+    if(new_speed_mm_per_min > )
+
+    Serial.print("CurrTime: ");
+    Serial.println(curr_time_ms);
+    Serial.print("Setpoint_mm per ms: ");
+    Serial.println(setpoint_mm_per_ms);
+    Serial.print("Feedback_mm per ms: ");
+    Serial.println(feedback_mm_per_ms);
     Serial.print("Control Task New Speed ");
-    Serial.println(newSpeed);
-    this->driver->setVelocity(newSpeed);
+    Serial.println(new_speed_mm_per_min);
+    this->driver->setVelocity(new_speed_mm_per_min);
 }
 
 Team11Control::~Team11Control()
@@ -115,6 +143,7 @@ Team11Control::~Team11Control()
 bool Team11Control::startFlow()
 {
     driver->enable();
+    startPosition = driver->getDistanceMm();
     startTime = millis();
     this->state = 1;
     return true;
