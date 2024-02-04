@@ -6,7 +6,7 @@
 static const char *TAG = "ESP32PwmSpiDriver";
 static pcnt_config_t upConfig = {
     .ctrl_gpio_num = PCNT_PIN_NOT_USED,
-    .pos_mode = PCNT_COUNT_DEC,
+    .pos_mode = PCNT_COUNT_INC,
     .neg_mode = PCNT_COUNT_DIS,
     .counter_h_lim = 32767,
     .counter_l_lim = -32768,
@@ -16,7 +16,7 @@ static pcnt_config_t upConfig = {
 
 static pcnt_config_t downConfig = {
     .ctrl_gpio_num = PCNT_PIN_NOT_USED,
-    .pos_mode = PCNT_COUNT_INC,
+    .pos_mode = PCNT_COUNT_DEC,
     .neg_mode = PCNT_COUNT_DIS,
     .counter_h_lim = 32767,
     .counter_l_lim = -32768,
@@ -31,7 +31,6 @@ static pcnt_isr_handle_t isrHandle = 0;
 
 static void IRAM_ATTR handlePCNTOverflow(void *arg)
 {
-    Serial.println("ESP32 PWM SPI Driver: implement PCNT Overflow.");
     ESP32PwmSpiDriver *driver = (ESP32PwmSpiDriver *)arg;
 
     uint32_t pcnt_event;
@@ -58,9 +57,11 @@ void ESP32PwmSpiDriver::initPulseCounter(void)
     upConfig.pulse_gpio_num = this->stepPin;
     downConfig.pulse_gpio_num = this->stepPin;
 
-    pcnt_unit_config(&upConfig);
-    pcnt_counter_clear(DEFAULT_PCNT_UNIT);
+    Serial.print("PCNT Configured: ");
+    Serial.println(pcnt_unit_config(&downConfig) == ESP_OK);
+    
     pcnt_counter_pause(DEFAULT_PCNT_UNIT);
+    pcnt_counter_clear(DEFAULT_PCNT_UNIT);
     pcnt_event_enable(DEFAULT_PCNT_UNIT, PCNT_EVT_H_LIM);
     pcnt_event_enable(DEFAULT_PCNT_UNIT, PCNT_EVT_L_LIM);
     pcnt_isr_register(handlePCNTOverflow, this, 0, &isrHandle);
@@ -153,7 +154,8 @@ float ESP32PwmSpiDriver::getDistanceMm()
 unsigned long long ESP32PwmSpiDriver::getDistanceSteps(void)
 {
     int16_t distance = 0;
-    pcnt_get_counter_value(DEFAULT_PCNT_UNIT, &distance);
+    Serial.print("Counter Value Success: ");
+    Serial.println(pcnt_get_counter_value(DEFAULT_PCNT_UNIT, &distance));
     return this->distanceSteps + (distance * 256 / microStepSetting);
 }
 

@@ -2,10 +2,6 @@
 	"folders": [
 		{
 			"path": "."
-		},
-		{
-			"name": "MotorSadness",
-			"path": "../../PlatformIO/Projects/MotorSadness"
 		}
 	],
 	"settings": {

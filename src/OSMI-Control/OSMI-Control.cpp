@@ -11,7 +11,7 @@
 #define GROUP timer_group_t::TIMER_GROUP_0
 #define TIMER timer_idx_t::TIMER_1
 
-#define CONTROL_FREQ 10
+#define CONTROL_FREQ 2
 
 #define TIMER_DIVIDER 8
 #define TIMER_SCALE (TIMER_BASE_CLK / TIMER_DIVIDER)
@@ -55,7 +55,7 @@ Team11Control::Team11Control(float volumePerDistance, FluidDeliveryDriver *drive
 void Team11Control::controlTaskUpdate()
 {
 
-    float setpoint_mm_per_ms;
+    float setpoint_mm_per_min;
     // global start time (no bolus)
     unsigned long curr_time_ms = millis() - startTime; // f*** the user timer 
 
@@ -70,7 +70,7 @@ void Team11Control::controlTaskUpdate()
 
     bool detected = driver->occlusionDetected();
 
-    if (detected)
+    if (detected && (curr_time_ms < 2000))
     {
         this->state = 4;
         Serial.println("Occlusion detected.");
@@ -105,10 +105,10 @@ void Team11Control::controlTaskUpdate()
         this->state = 0;
         return;
     case 2: // infusion delivery
-        setpoint_mm_per_ms = infusionRate / 60 * 1000 / volumePerDistance;
+        setpoint_mm_per_min = infusionRate;
         break;
     case 1: // bolus delivery
-        setpoint_mm_per_ms = bolusRate / 60 * 1000 / volumePerDistance;
+        setpoint_mm_per_min = bolusRate;
         break;
 
     case 0:
@@ -118,19 +118,24 @@ void Team11Control::controlTaskUpdate()
 
     // Set velocity for cases 2 & 1.
 
-    float err = setpoint_mm_per_ms - feedback_mm_per_ms;
+    float err = setpoint_mm_per_min - (feedback_mm_per_ms / 60000.0F);
     
-    unsigned long long new_speed_mm_per_min = err*kP + err*kI + err*kD;
-    if(new_speed_mm_per_min > )
+    float new_speed_mm_per_min = (setpoint_mm_per_min + (err*kP) + (err*kI) + (err*kD));
+
+    if(new_speed_mm_per_min > 80) {
+        new_speed_mm_per_min = 80;
+    }
 
     Serial.print("CurrTime: ");
     Serial.println(curr_time_ms);
-    Serial.print("Setpoint_mm per ms: ");
-    Serial.println(setpoint_mm_per_ms);
+    Serial.print("Setpoint_mm per min: ");
+    Serial.println(setpoint_mm_per_min);
     Serial.print("Feedback_mm per ms: ");
     Serial.println(feedback_mm_per_ms);
-    Serial.print("Control Task New Speed ");
-    Serial.println(new_speed_mm_per_min);
+    Serial.print("Control Task New Speed, ");
+    Serial.print(new_speed_mm_per_min);
+    Serial.println(" mm/min");
+
     this->driver->setVelocity(new_speed_mm_per_min);
 }
 
