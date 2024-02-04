@@ -30,7 +30,7 @@ void Team11ControlTask(void *parameters)
 Team11Control::Team11Control(float volumePerDistance, FluidDeliveryDriver *driver)
 {
     // TODO setup p_controller with appropriate values.
-    this->p_Controller = FastPID(0, 0, 0, 1);
+    this->p_Controller = FastPID(0.8, 0, 0, 1);
     this->driver = driver;
     this->volumePerDistance = volumePerDistance;
     this->state = 0;
@@ -51,11 +51,11 @@ void Team11Control::controlTaskUpdate()
 {
 
     float setpoint;
-    float feedback = getVolumeDelivered();
     unsigned long currTime = millis() - startTime; // f*** the user timer
+    float feedback = this->driver->getDistanceMm() / currTime;
 
     bool detected = driver->occlusionDetected();
-    //bool detected = false;
+    // bool detected = false;
     if (detected)
     {
         this->state = 4;
@@ -88,10 +88,10 @@ void Team11Control::controlTaskUpdate()
         this->state = 0;
         return;
     case 2: // infusion delivery
-        setpoint = (infusionRate * currTime) + bolusVolume;
+        setpoint = infusionRate;
         break;
     case 1: // bolus delivery
-        setpoint = bolusRate * currTime;
+        setpoint = bolusRate;
         break;
 
     case 0:
@@ -100,7 +100,6 @@ void Team11Control::controlTaskUpdate()
     }
 
     // Set velocity for cases 2 & 1.
-
     unsigned long long newSpeed = this->p_Controller.step(lroundf(setpoint), lroundf(feedback));
     Serial.print("Control Task New Speed ");
     Serial.println(newSpeed);
