@@ -191,22 +191,28 @@ void ESP32PwmSpiDriver::disable()
 void ESP32PwmSpiDriver::setDirection(direction_t direction)
 {
     // Guard against changing directions while moving.
-    if (status == Moving)
+    if (status == Moving) {
+        Serial.println("Cannot change direction while moving.");
         return;
+    }
 
     switch (direction)
     {
-    Reverse:
+    case Reverse:
         // set the pulse counter direction the inverse of up / down.
         pcnt_unit_config(configs[inverseDirection ^ 1]);
+        Serial.println("Reverse");
         microStepperDriver.setDirection(false); // todo confirm directioning or make reconfigurable.
         break;
-    Depress:
+    case Depress:
     default:
         // Change pulse counter direction to count up.
+        Serial.println("Forward");
         pcnt_unit_config(configs[inverseDirection]);
         microStepperDriver.setDirection(true);
+        break;
     }
+
     microStepperDriver.applySettings();
     microStepperDriver.verifySettings();
 }

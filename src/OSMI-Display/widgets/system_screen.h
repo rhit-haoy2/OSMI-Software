@@ -23,7 +23,11 @@ typedef struct
 
 
     lv_obj_t *startinfu_button;
-    lv_obj_t *resetinfu_button;
+    lv_obj_t *resetinfufast_button;
+    lv_obj_t *resetinfuslow_button;
+    lv_obj_t *forwardinfufast_button;
+    lv_obj_t *forwardinfuslow_button;
+
 } system_screen_t;
 
 

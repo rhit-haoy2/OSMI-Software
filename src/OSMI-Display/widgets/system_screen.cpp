@@ -11,10 +11,10 @@ static void dossetEdit_button_handler(lv_event_t *event)
 {
     system_screen_t *screen = (system_screen_t *)lv_obj_get_user_data(event->target);
     lv_scr_load(screen->config_screen);
-
 }
 
-static void resetinfu_button_handler(lv_event_t *event){
+
+static void resetinfufast_button_handler(lv_event_t *event){
     system_screen_t *screen = (system_screen_t *)lv_obj_get_user_data(event->target);
     lv_event_code_t code = lv_event_get_code(event);
     if(code == LV_EVENT_PRESSED){
@@ -29,6 +29,56 @@ static void resetinfu_button_handler(lv_event_t *event){
     }
     
 }
+
+static void resetinfuslow_button_handler(lv_event_t *event){
+    system_screen_t *screen = (system_screen_t *)lv_obj_get_user_data(event->target);
+    lv_event_code_t code = lv_event_get_code(event);
+    if(code == LV_EVENT_PRESSED){
+        screen->Driver->disable();
+        screen->Driver->setDirection(Reverse);
+        screen->Driver->setVelocity(0.01);
+        screen->Driver->enable();
+    }else if(code == LV_EVENT_RELEASED){
+        screen->Driver->disable();
+        screen->Driver->setDirection(Depress);
+        
+    }
+    
+}
+
+static void forwardinfufast_button_handler(lv_event_t *event){
+    system_screen_t *screen = (system_screen_t *)lv_obj_get_user_data(event->target);
+    lv_event_code_t code = lv_event_get_code(event);
+    if(code == LV_EVENT_PRESSED){
+        screen->Driver->disable();
+        screen->Driver->setDirection(Depress);
+        screen->Driver->setVelocity(0.1);
+        screen->Driver->enable();
+    }else if(code == LV_EVENT_RELEASED){
+        screen->Driver->disable();
+        screen->Driver->setDirection(Depress);
+        
+    }
+    
+}
+
+static void forwardinfuslow_button_handler(lv_event_t *event){
+    system_screen_t *screen = (system_screen_t *)lv_obj_get_user_data(event->target);
+    lv_event_code_t code = lv_event_get_code(event);
+    if(code == LV_EVENT_PRESSED){
+        screen->Driver->disable();
+        screen->Driver->setDirection(Depress);
+        screen->Driver->setVelocity(0.01);
+        screen->Driver->enable();
+    }else if(code == LV_EVENT_RELEASED){
+        screen->Driver->disable();
+        screen->Driver->setDirection(Depress);
+        
+    }
+    
+}
+
+
 
 void create_system_screen(system_screen_t *screen){
     lv_obj_t *temporary_label;
@@ -80,14 +130,32 @@ void create_system_screen(system_screen_t *screen){
     lv_obj_set_user_data(screen->dossetEdit_button,screen);
     lv_obj_add_event_cb(screen->dossetEdit_button, dossetEdit_button_handler, LV_EVENT_RELEASED, screen);
 
-    screen->resetinfu_button = lv_btn_create(screen->system_screen);
-    temporary_label = lv_label_create(screen->resetinfu_button);
-    lv_label_set_text(temporary_label, "ResetSyringe");
+    screen->resetinfufast_button = lv_btn_create(screen->system_screen);
+    temporary_label = lv_label_create(screen->resetinfufast_button);
+    lv_label_set_text(temporary_label, "ResetSyringeFast");
     lv_obj_center(temporary_label);
-    lv_obj_set_user_data(screen->resetinfu_button,screen);
-    lv_obj_add_event_cb(screen->resetinfu_button, resetinfu_button_handler,LV_EVENT_ALL,screen);
+    lv_obj_set_user_data(screen->resetinfufast_button,screen);
+    lv_obj_add_event_cb(screen->resetinfufast_button, resetinfufast_button_handler,LV_EVENT_ALL,screen);
 
+    screen->resetinfuslow_button = lv_btn_create(screen->system_screen);
+    temporary_label = lv_label_create(screen->resetinfuslow_button);
+    lv_label_set_text(temporary_label, "ResetSyringeSlow");
+    lv_obj_center(temporary_label);
+    lv_obj_set_user_data(screen->resetinfuslow_button,screen);
+    lv_obj_add_event_cb(screen->resetinfuslow_button, resetinfuslow_button_handler,LV_EVENT_ALL,screen);
 
+    screen->forwardinfufast_button = lv_btn_create(screen->system_screen);
+    temporary_label = lv_label_create(screen->forwardinfufast_button);
+    lv_label_set_text(temporary_label, "ForwardSyringeFast");
+    lv_obj_center(temporary_label);
+    lv_obj_set_user_data(screen->forwardinfufast_button,screen);
+    lv_obj_add_event_cb(screen->forwardinfufast_button, forwardinfufast_button_handler,LV_EVENT_ALL,screen);
     
 
+    screen->forwardinfuslow_button = lv_btn_create(screen->system_screen);
+    temporary_label = lv_label_create(screen->forwardinfuslow_button);
+    lv_label_set_text(temporary_label, "ForwardSyringeSlow");
+    lv_obj_center(temporary_label);
+    lv_obj_set_user_data(screen->forwardinfuslow_button,screen);
+    lv_obj_add_event_cb(screen->forwardinfuslow_button, forwardinfuslow_button_handler,LV_EVENT_ALL,screen);
 }
