@@ -23,7 +23,7 @@ static pcnt_config_t downConfig = {
     .pos_mode = PCNT_COUNT_DEC,
     .neg_mode = PCNT_COUNT_DIS,
     .counter_h_lim = 32767,
-    .counter_l_lim = -1,
+    .counter_l_lim = -32768,
     .unit = DEFAULT_PCNT_UNIT,
     .channel = PCNT_CHANNEL_0,
 };
@@ -61,8 +61,11 @@ void ESP32PwmSpiDriver::initPulseCounter(void)
     upConfig.pulse_gpio_num = this->stepPin;
     downConfig.pulse_gpio_num = this->stepPin;
 
+    Serial.print("Up Config Pulse Pin: ");
+    Serial.println(upConfig.pulse_gpio_num);
+
     Serial.print("PCNT Configured: ");
-    Serial.println(pcnt_unit_config(&downConfig) == ESP_OK);
+    Serial.println(pcnt_unit_config(&upConfig) == ESP_OK);
 
     pcnt_filter_disable(DEFAULT_PCNT_UNIT);
     pcnt_event_enable(DEFAULT_PCNT_UNIT, PCNT_EVT_H_LIM);
