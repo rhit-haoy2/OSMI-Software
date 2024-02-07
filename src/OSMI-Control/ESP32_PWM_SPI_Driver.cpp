@@ -51,7 +51,7 @@ ledc_timer_config_t stepPinTimerConfig = {
     .speed_mode = LEDC_HIGH_SPEED_MODE,
     .duty_resolution = LEDC_TIMER_10_BIT,
     .timer_num = LEDC_TIMER_0,
-    .freq_hz = 1,
+    .freq_hz = 100,
     .clk_cfg = LEDC_AUTO_CLK,
 };
 
@@ -119,12 +119,6 @@ void ESP32PwmSpiDriver::initPWM(void)
 
     Serial.print("Channel Config OK: ");
     Serial.println(ledc_channel_config(&stepPinChannelConfig) == ESP_OK ? "True" : "False");
-
-    // Setup Pulse Counter
-    initPulseCounter();
-
-    gpio_set_direction((gpio_num_t)stepPin, GPIO_MODE_INPUT_OUTPUT);
-    gpio_matrix_out(stepPin, LEDC_HS_SIG_OUT0_IDX + LEDC_CHANNEL_0, 0, 0);
 }
 
 ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin, float pitch, float degreesPerStep)
@@ -144,6 +138,13 @@ ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin
 
     // Setup PWM
     this->initPWM();
+
+    // Setup Pulse Counter
+    initPulseCounter();
+
+    // Enable both devices.
+    gpio_set_direction((gpio_num_t)stepPin, GPIO_MODE_INPUT_OUTPUT);
+    gpio_matrix_out(stepPin, LEDC_HS_SIG_OUT0_IDX + LEDC_CHANNEL_0, 0, 0);
 
     // Microstepper Driver.
     microStepperDriver.resetSettings();
