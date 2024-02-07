@@ -2,6 +2,9 @@
 #include <driver/pcnt.h>
 #include <driver/gpio.h>
 #include <math.h>
+#define STL_LRN_OK 0b10000
+#define STALL 0b1000
+
 
 static const char *TAG = "ESP32PwmSpiDriver";
 static pcnt_config_t upConfig = {
@@ -155,9 +158,7 @@ ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin
     ctrl5 = ctrl5 | 0x10;
     microStepperDriver.setReg(DRV8434SRegAddr::CTRL5, ctrl5); // enable stall detection
 
-    uint8_t ctrl6 = microStepperDriver.getCachedReg(DRV8434SRegAddr::CTRL6);
-    ctrl6 = 1;
-    microStepperDriver.setReg(DRV8434SRegAddr::CTRL6, ctrl6);
+    
 
     uint8_t ctrl4 = microStepperDriver.getCachedReg(DRV8434SRegAddr::CTRL4);
     ctrl4 = ctrl4 | 0x10;
@@ -227,8 +228,8 @@ void ESP32PwmSpiDriver::enable()
     this->status = EspDriverStatus_t::Moving;
 
     // set stall threshold to 0 while learning.
-    microStepperDriver.driver.writeReg(DRV8434SRegAddr::CTRL6, 0);
-    microStepperDriver.driver.writeReg(DRV8434SRegAddr::CTRL7, 0);
+    //microStepperDriver.driver.writeReg(DRV8434SRegAddr::CTRL6, 0);
+    //microStepperDriver.driver.writeReg(DRV8434SRegAddr::CTRL7, 0);
 
     // Enable Stall Detection learning.
     uint8_t ctrl5 = microStepperDriver.getCachedReg(DRV8434SRegAddr::CTRL5);
@@ -302,19 +303,27 @@ void ESP32PwmSpiDriver::setCountUpDirection(direction_t direction)
 
 bool ESP32PwmSpiDriver::occlusionDetected()
 {
+    uint8_t diag2 = microStepperDriver.readDiag2();
+    String lrn_success = (diag2 & STL_LRN_OK) > 0 ? "True" : "False";
+    String stall = (diag2 & STALL) > 0 ? "True" : "False";
+    Serial.print("learning done ");
+    Serial.println(lrn_success);
+    Serial.print("stall ");
+    Serial.println(stall);
+
     // Measure torque
     uint16_t torque_low = microStepperDriver.driver.readReg(DRV8434SRegAddr::CTRL8);
     uint16_t torque_high = microStepperDriver.driver.readReg(DRV8434SRegAddr::CTRL9) & 0x0F;
     uint16_t torque = (torque_high << 8) + torque_low;
-    // Serial.print("TRQ ");
-    // Serial.println(torque);
+    Serial.print("TRQ ");
+    Serial.println(torque);
 
     // Get threshold if learnt.
     uint16_t thresh_low = microStepperDriver.driver.readReg(DRV8434SRegAddr::CTRL6);
     uint16_t thresh_high = microStepperDriver.driver.readReg(DRV8434SRegAddr::CTRL7) & 0x0F;
     uint16_t threshold = (thresh_high << 8) + thresh_low;
-    // Serial.print("Thresh: ");
-    // Serial.println(threshold);
+    Serial.print("Thresh: ");
+    Serial.println(threshold);
 
     return torque <= threshold; // Torque approaches zero as more greatly loaded.
 }
@@ -344,17 +353,17 @@ void ESP32PwmSpiDriver::resetFeedback(void)
 int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
 {
 
-    Serial.print("Setting Velocity ");
-    Serial.print(mmPerMinute);
-    Serial.println(" mm/min");
+    // Serial.print("Setting Velocity ");
+    // Serial.print(mmPerMinute);
+    // Serial.println(" mm/min");
 
     if (mmPerMinute < 0)
     {
         return -1;
     }
 
-    Serial.print("Direction: ");
-    Serial.println(microStepperDriver.getDirection() ? "True" : "False");
+    // Serial.print("Direction: ");
+    // Serial.println(microStepperDriver.getDirection() ? "True" : "False");
     float distancePerStepMm = distancePerRotMm * degreesPerStep / 360.0F;
 
     // full winding step / second.
