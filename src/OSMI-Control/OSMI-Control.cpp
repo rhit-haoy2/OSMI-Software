@@ -72,7 +72,7 @@ void Team11Control::controlTaskUpdate()
 
     bool detected = driver->occlusionDetected();
 
-    if (detected && (curr_time_ms < 2000))
+    if (detected && (curr_time_ms > 2000))
     {
         this->state = 4;
         Serial.println("Occlusion detected.");
@@ -128,15 +128,15 @@ void Team11Control::controlTaskUpdate()
         new_speed_mm_per_min = 80;
     }
 
-    // Serial.print("CurrTime: ");
-    // Serial.println(curr_time_ms);
-    // Serial.print("Setpoint_mm per min: ");
-    // Serial.println(setpoint_mm_per_min);
-    // Serial.print("Feedback_mm per ms: ");
-    // Serial.println(feedback_mm_per_ms);
-    // Serial.print("Control Task New Speed, ");
-    // Serial.print(new_speed_mm_per_min);
-    // Serial.println(" mm/min");
+    Serial.print("CurrTime: ");
+    Serial.println(curr_time_ms);
+    Serial.print("Setpoint_mm per min: ");
+    Serial.println(setpoint_mm_per_min);
+    Serial.print("Feedback_mm per ms: ");
+    Serial.println(feedback_mm_per_ms);
+    Serial.print("Control Task New Speed, ");
+    Serial.print(new_speed_mm_per_min);
+    Serial.println(" mm/min");
     if(currentvelocity!=new_speed_mm_per_min){
         currentvelocity = new_speed_mm_per_min;
         this->driver->setVelocity(new_speed_mm_per_min);
