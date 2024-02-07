@@ -5,27 +5,54 @@
 
 static const char *TAG = "ESP32PwmSpiDriver";
 static pcnt_config_t upConfig = {
+    .pulse_gpio_num = PCNT_PIN_NOT_USED,
     .ctrl_gpio_num = PCNT_PIN_NOT_USED,
+
     .lctrl_mode = PCNT_MODE_KEEP,
     .hctrl_mode = PCNT_MODE_KEEP,
+
     .pos_mode = PCNT_COUNT_INC,
     .neg_mode = PCNT_COUNT_DIS,
+
     .counter_h_lim = 32767,
-    .counter_l_lim = -1,
+    .counter_l_lim = -32768,
+
     .unit = DEFAULT_PCNT_UNIT,
     .channel = PCNT_CHANNEL_0,
 };
 
 static pcnt_config_t downConfig = {
+    .pulse_gpio_num = PCNT_PIN_NOT_USED,
     .ctrl_gpio_num = PCNT_PIN_NOT_USED,
+
     .lctrl_mode = PCNT_MODE_KEEP,
     .hctrl_mode = PCNT_MODE_KEEP,
+
     .pos_mode = PCNT_COUNT_DEC,
     .neg_mode = PCNT_COUNT_DIS,
+
     .counter_h_lim = 32767,
     .counter_l_lim = -32768,
+
     .unit = DEFAULT_PCNT_UNIT,
     .channel = PCNT_CHANNEL_0,
+};
+
+ledc_channel_config_t stepPinChannelConfig = {
+    .speed_mode = LEDC_HIGH_SPEED_MODE,
+    .channel = LEDC_CHANNEL_0,
+    .intr_type = LEDC_INTR_DISABLE,
+    .timer_sel = LEDC_TIMER_0,
+    .duty = 0,
+    .hpoint = 0,
+};
+
+ledc_timer_config_t stepPinTimerConfig = {
+    .speed_mode = LEDC_HIGH_SPEED_MODE,
+    .duty_resolution = LEDC_TIMER_10_BIT,
+    .timer_num = LEDC_TIMER_0,
+    .freq_hz = 1,
+    .clk_cfg = LEDC_AUTO_CLK,
 };
 
 // Allows for static inversion of counting up or down.
@@ -57,12 +84,9 @@ static void IRAM_ATTR limitISRHandler(void *driverInst)
 
 void ESP32PwmSpiDriver::initPulseCounter(void)
 {
-    // Config for the unit.
+    // Set pulse counter pin.
     upConfig.pulse_gpio_num = this->stepPin;
     downConfig.pulse_gpio_num = this->stepPin;
-
-    Serial.print("Up Config Pulse Pin: ");
-    Serial.println(upConfig.pulse_gpio_num);
 
     Serial.print("PCNT Configured: ");
     Serial.println(pcnt_unit_config(&upConfig) == ESP_OK);
@@ -87,33 +111,14 @@ void ESP32PwmSpiDriver::initPulseCounter(void)
 /// ESP_ERROR_CHECK(ledc_update_duty(PWM_SPEED, PWM_CHANNEL));
 void ESP32PwmSpiDriver::initPWM(void)
 {
-    // pinMode(stepPin, ANALOG);
-    // analogWrite(stepPin, 0);
-    // analogWriteFrequency(1000);
-    // analogWriteResolution(8);
-
     // See: https://www.esp32.com/viewtopic.php?t=18115
-    ledc_timer_config_t timer;
-    timer.timer_num = LEDC_TIMER_0;
-    timer.speed_mode = LEDC_HIGH_SPEED_MODE;
-    timer.freq_hz = 60000;
-    timer.duty_resolution = LEDC_TIMER_8_BIT;
-    timer.clk_cfg = LEDC_AUTO_CLK;
-
     Serial.print("Timer Config OK: ");
-    Serial.println(ledc_timer_config(&timer) == ESP_OK ? "True" : "False");
+    Serial.println(ledc_timer_config(&stepPinTimerConfig) == ESP_OK ? "True" : "False");
 
-    ledc_channel_config_t channel;
-    channel.channel = LEDC_CHANNEL_0;
-    channel.gpio_num = stepPin;
-    channel.duty = 0;
-    channel.hpoint = 0;
-    channel.intr_type = LEDC_INTR_DISABLE;
-    channel.speed_mode = LEDC_HIGH_SPEED_MODE;
-    channel.timer_sel = LEDC_TIMER_0;
+    stepPinChannelConfig.gpio_num = stepPin;
 
     Serial.print("Channel Config OK: ");
-    Serial.println(ledc_channel_config(&channel) == ESP_OK ? "True" : "False");
+    Serial.println(ledc_channel_config(&stepPinChannelConfig) == ESP_OK ? "True" : "False");
 
     // Setup Pulse Counter
     initPulseCounter();
@@ -214,7 +219,10 @@ void ESP32PwmSpiDriver::enable()
     Serial.println(microStepperDriver.verifySettings());
 
     // Enable PWM.
-    analogWrite(stepPin, 1);
+    stepPinChannelConfig.duty = 100;
+    Serial.print("PWM Enable OK: ");
+    Serial.println(ledc_channel_config(&stepPinChannelConfig) == ESP_OK ? "True" : "False");
+
     this->status = EspDriverStatus_t::Moving;
 
     // set stall threshold to 0 while learning.
@@ -230,7 +238,9 @@ void ESP32PwmSpiDriver::enable()
 void ESP32PwmSpiDriver::disable()
 {
     // disable PWM. Stop motor layer 1.
-    analogWrite(stepPin, 0);
+    stepPinChannelConfig.duty = 0;
+    Serial.print("PWM disable OK: ");
+    Serial.println(ledc_channel_config(&stepPinChannelConfig) == ESP_OK ? "True" : "False");
 
     // Disable motor driver. Stop motor layer 2.
     microStepperDriver.disableDriver();
@@ -406,9 +416,10 @@ int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
     stepPerSecond = mmPerMinute * microStepSetting / distancePerStepMm;
 
     Serial.printf("Microstep: %d\n", microStepSetting);
-    Serial.print("Step Per Second ");
-    Serial.println(stepPerSecond, 3);
     uint32_t herz = round(stepPerSecond);
+
+    Serial.print("Step Per Second ");
+    Serial.println(herz, 3);
 
     if (herz <= 0)
     {
@@ -416,7 +427,12 @@ int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
         return -1;
     }
 
-    analogWriteFrequency(herz);
+    stepPinTimerConfig.freq_hz = herz;
+    esp_err_t timerOk = ledc_timer_config(&stepPinTimerConfig);
+
+    Serial.print("Timer Config OK: ");
+    Serial.println(timerOk == ESP_OK ? "True" : "False");
+
     return 0;
 }
 
