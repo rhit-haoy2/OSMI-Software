@@ -16,6 +16,8 @@
 #define TIMER_DIVIDER 8
 #define TIMER_SCALE (TIMER_BASE_CLK / TIMER_DIVIDER)
 
+float currentvelocity;
+
 /*Implementation for ControlTask */
 
 void Team11ControlTask(void *parameters)
@@ -60,7 +62,7 @@ void Team11Control::controlTaskUpdate()
     unsigned long curr_time_ms = millis() - startTime; // f*** the user timer 
 
     // time after bolus.
-    if (state == 2)
+    if ((state == 2) && (bolusVolume>0))
     {
         curr_time_ms - (bolusVolume * 1000 / bolusRate); // calculate current time is in ms.
     }
@@ -126,17 +128,20 @@ void Team11Control::controlTaskUpdate()
         new_speed_mm_per_min = 80;
     }
 
-    Serial.print("CurrTime: ");
-    Serial.println(curr_time_ms);
-    Serial.print("Setpoint_mm per min: ");
-    Serial.println(setpoint_mm_per_min);
-    Serial.print("Feedback_mm per ms: ");
-    Serial.println(feedback_mm_per_ms);
-    Serial.print("Control Task New Speed, ");
-    Serial.print(new_speed_mm_per_min);
-    Serial.println(" mm/min");
-
-    this->driver->setVelocity(new_speed_mm_per_min);
+    // Serial.print("CurrTime: ");
+    // Serial.println(curr_time_ms);
+    // Serial.print("Setpoint_mm per min: ");
+    // Serial.println(setpoint_mm_per_min);
+    // Serial.print("Feedback_mm per ms: ");
+    // Serial.println(feedback_mm_per_ms);
+    // Serial.print("Control Task New Speed, ");
+    // Serial.print(new_speed_mm_per_min);
+    // Serial.println(" mm/min");
+    if(currentvelocity!=new_speed_mm_per_min){
+        currentvelocity = new_speed_mm_per_min;
+        this->driver->setVelocity(new_speed_mm_per_min);
+    }
+    
 }
 
 Team11Control::~Team11Control()

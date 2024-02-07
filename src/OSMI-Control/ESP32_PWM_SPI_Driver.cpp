@@ -295,15 +295,15 @@ bool ESP32PwmSpiDriver::occlusionDetected()
     uint16_t torque_low = microStepperDriver.driver.readReg(DRV8434SRegAddr::CTRL8);
     uint16_t torque_high = microStepperDriver.driver.readReg(DRV8434SRegAddr::CTRL9) & 0x0F;
     uint16_t torque = (torque_high << 8) + torque_low;
-    // Serial.print("TRQ ");
-    // Serial.println(torque);
+    Serial.print("TRQ ");
+    Serial.println(torque);
 
     // Get threshold if learnt.
     uint16_t thresh_low = microStepperDriver.driver.readReg(DRV8434SRegAddr::CTRL6);
     uint16_t thresh_high = microStepperDriver.driver.readReg(DRV8434SRegAddr::CTRL7) & 0x0F;
     uint16_t threshold = (thresh_high << 8) + thresh_low;
-    // Serial.print("Thresh: ");
-    // Serial.println(threshold);
+    Serial.print("Thresh: ");
+    Serial.println(threshold);
 
     return torque <= threshold; // Torque approaches zero as more greatly loaded.
 }
@@ -333,17 +333,17 @@ void ESP32PwmSpiDriver::resetFeedback(void)
 int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
 {
 
-    Serial.print("Setting Velocity ");
-    Serial.print(mmPerMinute);
-    Serial.println(" mm/min");
+    // Serial.print("Setting Velocity ");
+    // Serial.print(mmPerMinute);
+    // Serial.println(" mm/min");
 
     if (mmPerMinute < 0)
     {
         return -1;
     }
 
-    Serial.print("Direction: ");
-    Serial.println(microStepperDriver.getDirection() ? "True" : "False");
+    // Serial.print("Direction: ");
+    // Serial.println(microStepperDriver.getDirection() ? "True" : "False");
     float distancePerStepMm = distancePerRotMm * degreesPerStep / 360.0F;
 
     // full winding step / second.
@@ -405,9 +405,9 @@ int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
 
     stepPerSecond = mmPerMinute * microStepSetting / distancePerStepMm;
 
-    Serial.printf("Microstep: %d\n", microStepSetting);
-    Serial.print("Step Per Second ");
-    Serial.println(stepPerSecond, 3);
+    // Serial.printf("Microstep: %d\n", microStepSetting);
+    // Serial.print("Step Per Second ");
+    // Serial.println(stepPerSecond, 3);
     uint32_t herz = round(stepPerSecond);
 
     if (herz <= 0)
