@@ -36,15 +36,11 @@ public:
 
     void setDirection(direction_t direction);
     direction_t getDirection(void);
-    /// @brief Set the current direction as counting up.
-    void setCountUpDirection(direction_t direction);
+
     bool occlusionDetected(void);
 
     void disableInIsr();
     void setStepsInIsr(unsigned long long steps);
-
-    ///@brief do not use under normal circumstances.
-    void resetFeedback(void);
 
 private:
     int stepPin;
@@ -64,6 +60,8 @@ private:
     
     void initPWM(void);
     void initPulseCounter(void);
+    void initStepperDriver(int chipSelectPin);
+    void initGPIO(int stepPin, int stopPin);
 };
 
 /// @brief ECE Senior Design Team 11 (2023-2024) Implementation of Control Scheme

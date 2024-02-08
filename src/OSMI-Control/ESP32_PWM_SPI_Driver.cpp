@@ -9,15 +9,19 @@
 static const char *TAG = "ESP32PwmSpiDriver";
 
 static pcnt_config_t upConfig = {
+    // Set PCNT input signal and control GPIOs
     .pulse_gpio_num = PCNT_PIN_NOT_USED,
     .ctrl_gpio_num = PCNT_PIN_NOT_USED,
 
-    .lctrl_mode = PCNT_MODE_KEEP,
-    .hctrl_mode = PCNT_MODE_KEEP,
+    .lctrl_mode = PCNT_MODE_KEEP, // Do not change value based on CTRL
+    .hctrl_mode = PCNT_MODE_KEEP, // Do not change value based on CTRL
 
-    .pos_mode = PCNT_COUNT_INC,
-    .neg_mode = PCNT_COUNT_DIS,
+    // What to do on the positive / negative edge of pulse input?
+    .pos_mode = PCNT_COUNT_INC, // Count up on the positive edge
+    .neg_mode = PCNT_COUNT_DIS, // Keep the counter value on the negative edge
 
+    // What to do when control input is low or high?
+    // Set the maximum and minimum limit values to watch
     .counter_h_lim = 32767,
     .counter_l_lim = -32768,
 
@@ -32,7 +36,7 @@ static pcnt_config_t downConfig = {
     .lctrl_mode = PCNT_MODE_KEEP,
     .hctrl_mode = PCNT_MODE_KEEP,
 
-    .pos_mode = PCNT_COUNT_DEC,
+    .pos_mode = PCNT_COUNT_DEC, // unlike above, decrement.
     .neg_mode = PCNT_COUNT_DIS,
 
     .counter_h_lim = 32767,
@@ -68,7 +72,7 @@ static void IRAM_ATTR handlePCNTOverflow(void *arg)
 {
     ESP32PwmSpiDriver *driver = (ESP32PwmSpiDriver *)arg;
 
-    Serial.printf("PCNT overflow hit ");
+    Serial.print("PCNT overflow hit ");
 
     uint32_t pcnt_event;
     pcnt_get_event_status(DEFAULT_PCNT_UNIT, &pcnt_event);
@@ -90,28 +94,32 @@ static void IRAM_ATTR limitISRHandler(void *driverInst)
     driver->disableInIsr();
 }
 
+/// @brief Initialize the pulse counter systems.
+/// @param  void
 void ESP32PwmSpiDriver::initPulseCounter(void)
 {
     // Set pulse counter pin.
     upConfig.pulse_gpio_num = this->stepPin;
     downConfig.pulse_gpio_num = this->stepPin;
 
+    esp_err_t pcntConfigSuccess = pcnt_unit_config(&upConfig);
     Serial.print("PCNT Configured: ");
-    Serial.println(pcnt_unit_config(&upConfig) == ESP_OK);
+    Serial.println(pcntConfigSuccess == ESP_OK ? "True" : "False");
 
-    pcnt_filter_disable(DEFAULT_PCNT_UNIT);
-
+    // Enable overflow events.
     pcnt_event_enable(DEFAULT_PCNT_UNIT, PCNT_EVT_H_LIM);
     pcnt_event_enable(DEFAULT_PCNT_UNIT, PCNT_EVT_L_LIM);
 
+    // pause for isr configs.
     pcnt_counter_pause(DEFAULT_PCNT_UNIT);
-    pcnt_counter_clear(DEFAULT_PCNT_UNIT);
+    pcnt_filter_disable(DEFAULT_PCNT_UNIT);
 
+    // install ISR service
     pcnt_isr_service_install(0);
     pcnt_isr_handler_add(DEFAULT_PCNT_UNIT, handlePCNTOverflow, (void *)this);
 
-    pcnt_intr_enable(DEFAULT_PCNT_UNIT);
-
+    // Clear for first use.
+    pcnt_counter_clear(DEFAULT_PCNT_UNIT);
     pcnt_counter_resume(DEFAULT_PCNT_UNIT);
 }
 
@@ -131,31 +139,13 @@ void ESP32PwmSpiDriver::initPWM(void)
     Serial.println(ledc_channel_config(&stepPinChannelConfig) == ESP_OK ? "True" : "False");
 }
 
-ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin, float pitch, float degreesPerStep)
+void ESP32PwmSpiDriver::initStepperDriver(int chipSelectPin)
 {
     // Setup micro stepper
     microStepperDriver = DRV8434S();
     microStepperDriver.setChipSelectPin(chipSelectPin);
 
-    this->stepPin = stepPin;
-    this->distancePerRotMm = pitch;
-    this->degreesPerStep = degreesPerStep;
-    this->distanceSteps = 10240000; // set to 0 when done.
-    this->microStepSetting = 1;
-
     delay(5); // Allow for stepper to wake up.
-
-    // Setup PWM
-    this->initPWM();
-
-    // Setup Pulse Counter
-    initPulseCounter();
-
-    // Enable both devices.
-    gpio_set_direction((gpio_num_t)stepPin, GPIO_MODE_INPUT_OUTPUT);
-    gpio_matrix_out(stepPin, LEDC_HS_SIG_OUT0_IDX + LEDC_CHANNEL_0, 0, 0);
-
-    // Microstepper Driver.
     microStepperDriver.resetSettings();
     microStepperDriver.disableSPIStep(); // Ensure STEP pin is stepping.
     microStepperDriver.enableSPIDirection();
@@ -169,32 +159,69 @@ ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin
     microStepperDriver.setReg(DRV8434SRegAddr::CTRL4, ctrl4); // enable open load detection.
 
     microStepperDriver.setCurrentMilliamps(1000);
+
     microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep32);
+    this->microStepSetting = 32;
 
     // todo configure step mode.
     Serial.print("Settings applied: ");
     Serial.println(microStepperDriver.verifySettings());
+}
 
+void ESP32PwmSpiDriver::initGPIO(int stepPin, int stopPin)
+{
     // esp32 gpio interrupt setup
-    gpio_config_t io_conf = {};
-    io_conf.intr_type = GPIO_INTR_NEGEDGE;
-    io_conf.pin_bit_mask = (1ull << stopPin);
-    io_conf.mode = GPIO_MODE_INPUT;
-    io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
+    gpio_config_t io_conf = {
+        .pin_bit_mask = (1ull << stopPin),
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_ENABLE,
+        .intr_type = GPIO_INTR_NEGEDGE,
+    };
+
     ESP_ERROR_CHECK(gpio_config(&io_conf));
     gpio_install_isr_service(ESP_INTR_FLAG_LEVEL3);
     gpio_isr_handler_add((gpio_num_t)stopPin, limitISRHandler, (void *)this);
+
+    // Enable both ledc and pcnt on same pin.
+    gpio_set_direction((gpio_num_t)stepPin, GPIO_MODE_INPUT_OUTPUT);
+    gpio_matrix_out(stepPin, LEDC_HS_SIG_OUT0_IDX + LEDC_CHANNEL_0, 0, 0);
+}
+
+/// @brief Constructor for ESP32 PWM Serial-Peripheral Interface Driver.
+/// @param chipSelectPin Chip Select for DRV8434S
+/// @param stepPin Step pin for DRV8434S
+/// @param stopPin Limit switch pin.
+/// @param pitch Distance per rotation of stepper motor in millimeters.
+/// @param degreesPerStep degrees per step of the stepper motor.
+ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin, float pitch, float degreesPerStep)
+{
+    this->stepPin = stepPin;
+    this->distancePerRotMm = pitch;
+    this->degreesPerStep = degreesPerStep;
+    this->distanceSteps = 0; // Assumes at 0. Should run thru calibrate routine.
+
+    // Setup PWM
+    initPWM();
+
+    // Setup Pulse Counter
+    initPulseCounter();
+
+    // initialize motor driver. Blocks 5ms.
+    initStepperDriver(chipSelectPin);
+
+    // initialize gpio. Do last for final mux settings.
+    initGPIO(stepPin, stopPin);
 }
 
 /// @brief Get the distance (in mm) away from the endstop.
 /// @return distance (in mm) away from end stop.
 float ESP32PwmSpiDriver::getDistanceMm()
 {
-    unsigned long long steps = getDistanceSteps();
+    unsigned long long microSteps = getDistanceSteps();
 
-    Serial.printf("Distance Steps: %d\n", steps);
-    // Steps to Rotation: 0.9 (deg / step) / 360 (deg / rot) / 256 uSteps / step
-    float distance = steps * 0.000009765625F / distancePerRotMm;
+    Serial.printf("Distance Steps: %d\n", microSteps);
+    // 92160 == 360 deg/rot * 256 uSteps / step
+    float distance = microSteps * degreesPerStep / (92160.0F * distancePerRotMm);
 
     return distance;
 }
@@ -204,28 +231,23 @@ float ESP32PwmSpiDriver::getDistanceMm()
 /// @return Distance in 256 microsteps / actual step.
 unsigned long long ESP32PwmSpiDriver::getDistanceSteps(void)
 {
-    int16_t distance = 0;
-    pcnt_get_counter_value(DEFAULT_PCNT_UNIT, &distance);
+    int16_t count = 0;
+    pcnt_get_counter_value(DEFAULT_PCNT_UNIT, &count);
 
-    return this->distanceSteps + (distance * 256 / microStepSetting);
+    return this->distanceSteps + (count * (256 / microStepSetting));
 }
 
+/// @brief Turn off the driver.
 void ESP32PwmSpiDriver::enable()
 {
 
-    Serial.print("Pulse counter resumed: ");
-    Serial.println(pcnt_counter_resume(DEFAULT_PCNT_UNIT) == ESP_OK ? "True" : "False");
-
     // Re-enable driver.
-    microStepperDriver.clearFaults();  // Clear faults on the driver.
-    microStepperDriver.enableDriver(); // Enable the driver.
-    Serial.print("Driver Ok: ");
-    bool ok = microStepperDriver.verifySettings();
-    if (!ok)
+    microStepperDriver.clearFaults(); // Clear faults on the driver.
+
+    if (microStepperDriver.verifySettings())
     {
         microStepperDriver.applySettings();
     }
-    Serial.println(microStepperDriver.verifySettings());
 
     // Enable PWM.
     stepPinChannelConfig.duty = 100;
@@ -233,10 +255,6 @@ void ESP32PwmSpiDriver::enable()
     Serial.println(ledc_channel_config(&stepPinChannelConfig) == ESP_OK ? "True" : "False");
 
     this->status = EspDriverStatus_t::Moving;
-
-    // set stall threshold to 0 while learning.
-    // microStepperDriver.driver.writeReg(DRV8434SRegAddr::CTRL6, 0);
-    // microStepperDriver.driver.writeReg(DRV8434SRegAddr::CTRL7, 0);
 
     // Enable Stall Detection learning.
     uint8_t ctrl5 = microStepperDriver.getCachedReg(DRV8434SRegAddr::CTRL5);
@@ -251,14 +269,11 @@ void ESP32PwmSpiDriver::disable()
     Serial.print("PWM disable OK: ");
     Serial.println(ledc_channel_config(&stepPinChannelConfig) == ESP_OK ? "True" : "False");
 
-    // Disable motor driver. Stop motor layer 2.
-    microStepperDriver.disableDriver();
-
-    // Good to stop pulse counter.
-    pcnt_counter_pause(DEFAULT_PCNT_UNIT);
     this->status = EspDriverStatus_t::Stopped;
 }
 
+/// @brief Set the direction of the motor.
+/// @param direction A direction type, either depress or reverse.
 void ESP32PwmSpiDriver::setDirection(direction_t direction)
 {
     // Guard against changing directions while moving.
@@ -272,8 +287,8 @@ void ESP32PwmSpiDriver::setDirection(direction_t direction)
     {
     case Reverse:
         // set the pulse counter direction the inverse of up / down.
-        pcnt_unit_config(&downConfig);
         Serial.println("Reverse");
+        pcnt_unit_config(&downConfig);
         microStepperDriver.setDirection(false); // todo confirm directioning or make reconfigurable.
         break;
     case Depress:
@@ -285,29 +300,22 @@ void ESP32PwmSpiDriver::setDirection(direction_t direction)
         break;
     }
 
-    microStepperDriver.applySettings();
-    microStepperDriver.verifySettings();
+    // Enable both ledc and pcnt on same pin.
+    gpio_set_direction((gpio_num_t)stepPin, GPIO_MODE_INPUT_OUTPUT);
+    gpio_matrix_out(stepPin, LEDC_HS_SIG_OUT0_IDX + LEDC_CHANNEL_0, 0, 0);
+
 }
 
+/// @brief Get the current direction from the driver.
+/// @param  void
+/// @return dirction_t direction either forward or reverse.
 direction_t ESP32PwmSpiDriver::getDirection(void)
 {
     return microStepperDriver.getDirection() ? Depress : Reverse;
 }
 
-void ESP32PwmSpiDriver::setCountUpDirection(direction_t direction)
-{
-    switch (direction)
-    {
-    case Reverse:
-        inverseDirection = 1;
-        break;
-
-    default:
-        inverseDirection = 0;
-        break;
-    }
-}
-
+/// @brief Try to detect an occlusion.
+/// @return 
 bool ESP32PwmSpiDriver::occlusionDetected()
 {
     // Measure torque
@@ -322,6 +330,7 @@ bool ESP32PwmSpiDriver::occlusionDetected()
     return torque <= threshold; // Torque approaches zero as more greatly loaded.
 }
 
+/// @brief Stop the counter and reset to zero.
 void ESP32PwmSpiDriver::disableInIsr()
 {
     this->disable();
@@ -337,13 +346,9 @@ void ESP32PwmSpiDriver::setStepsInIsr(unsigned long long steps)
     this->distanceSteps = steps;
 }
 
-/// @brief  Do not call under normal circumstances. See set steps in ISR.
-/// @param  void
-void ESP32PwmSpiDriver::resetFeedback(void)
-{
-    setStepsInIsr(0);
-}
-
+/// @brief Set the velocity of the carriage in mm per minute.
+/// @param mmPerMinute The velocity of the carriage.
+/// @return Success == 0, error < 0
 int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
 {
 
@@ -354,10 +359,7 @@ int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
 
     float distancePerStepMm = distancePerRotMm * degreesPerStep / 360.0F;
 
-    // full winding step / second.
-    microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep1);
     float stepPerSecond = mmPerMinute / distancePerStepMm;
-    microStepSetting = 1;
 
     if (stepPerSecond >= 14000)
     {
@@ -366,6 +368,9 @@ int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
         return -1;
     }
 
+    // full winding step / second.
+    microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep1);
+    microStepSetting = 1;
     while (stepPerSecond <= 50)
     {
         stepPerSecond = stepPerSecond * 2;
