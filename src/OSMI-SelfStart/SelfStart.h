@@ -9,5 +9,7 @@ extern "C"
 #include "nvs.h"
 }
 
+void SelfStartTestTask(void* params);
+
 
 #endif
