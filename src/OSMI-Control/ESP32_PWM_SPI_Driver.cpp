@@ -267,13 +267,6 @@ void ESP32PwmSpiDriver::disable()
 /// @param direction A direction type, either depress or reverse.
 void ESP32PwmSpiDriver::setDirection(direction_t direction)
 {
-    // Guard against changing directions while moving.
-    if (status == Moving)
-    {
-        Serial.println("Cannot change direction while moving.");
-        return;
-    }
-
     switch (direction)
     {
     case Reverse:
@@ -291,9 +284,6 @@ void ESP32PwmSpiDriver::setDirection(direction_t direction)
         break;
     }
 
-    // Enable both ledc and pcnt on same pin.
-    gpio_set_direction((gpio_num_t)stepPin, GPIO_MODE_INPUT_OUTPUT);
-    gpio_matrix_out(stepPin, LEDC_HS_SIG_OUT0_IDX + LEDC_CHANNEL_0, 0, 0);
 }
 
 /// @brief Get the current direction from the driver.
