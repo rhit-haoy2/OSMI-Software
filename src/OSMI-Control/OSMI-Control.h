@@ -42,11 +42,11 @@ public:
 
     /// @brief Set fluid flow rate in milliliter per minute
     /// @param flowRate flow rate in mL/min
-    virtual void setFlow(float flowRateMlPerMin) = 0;
+    virtual void setFlow(double flowRateMlPerMin) = 0;
 
     /// @brief get the total volume delivered from the controller.
     /// @return the volume delivered in mL.
-    virtual float getVolumeDelivered() = 0;
+    virtual double getVolumeDelivered() = 0;
 
     /// @brief Get the current status of the controller whether it's delivering, moving start/stopping.
     /// @return
@@ -63,12 +63,12 @@ class FluidDeliveryDriver
 public:
     /// @brief Get the distance feedback from system.
     /// @return The distance in mm
-    virtual float getDistanceMm() = 0;
+    virtual double getDistanceMm() = 0;
 
     /// @brief Set the velocity of travel.
     /// @param mmPerMinute Speed at which to move.
     /// @return Success
-    virtual int setVelocity(float mmPerMinute) = 0;
+    virtual int setVelocity(double mmPerMinute) = 0;
     virtual int getStatus() = 0;
 
     virtual void disable() = 0;

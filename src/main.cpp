@@ -32,14 +32,8 @@ void setup(void)
 	// Create the communication lines between tasks. Usually only one number at a time.
 	displayQueueHandle = xQueueCreate(1, sizeof(int));
 
-	// Configure display struct.
-	display_config_t displayConfig = {
-		//.driver = driverInst,
-		.handle = &displayQueueHandle,
-	};
-
 #ifdef SKIP_POST
-	BaseType_t dispSuccess = xTaskCreate(DisplayTask, "DISP", 64000, &displayConfig, 2, nullptr);
+	BaseType_t dispSuccess = xTaskCreate(DisplayTask, "DISP", 64000, nullptr, 2, nullptr);
 #else
 	BaseType_t postSuccess = xTaskCreate(SelfStartTestTask, "POST", 128, nullptr, configMAX_PRIORITIES, nullptr);
 #endif

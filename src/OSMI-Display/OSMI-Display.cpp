@@ -15,7 +15,8 @@
 #define DEG_PER_STEP 0.9F
 
 TFT_eSPI tft = TFT_eSPI();
-static Team11Control *controller;
+static ESP32PwmSpiDriver driverInst = ESP32PwmSpiDriver(SPI_DRIVER_CS, MOTOR_PWM_PIN, LIMIT_SWITCH_PIN, PITCH, DEG_PER_STEP);
+static Team11Control controller = Team11Control(1, (FluidDeliveryDriver *)&driverInst);
 
 /*Input device driver descriptor*/
 static lv_indev_t *my_indev;
@@ -128,10 +129,7 @@ void touch_calibrate()
 void DisplayTask(void *params)
 {
 
-    ESP32PwmSpiDriver *driverInst = new ESP32PwmSpiDriver(SPI_DRIVER_CS, MOTOR_PWM_PIN, LIMIT_SWITCH_PIN, PITCH, DEG_PER_STEP);
-    // delay(10000);
-    controller = new Team11Control(1, (FluidDeliveryDriver *)driverInst);
-
+    driverInst.initialize();
     tft.begin();
     tft.init();
     uint16_t calData[5] = {531, 3290, 415, 3480, 6};
@@ -161,24 +159,22 @@ void DisplayTask(void *params)
     config_screen_t config_screen;
     status_screen_t status_screen;
     system_screen_t system_screen;
-    
-    
-    status_screen.controller = controller;
+
+    status_screen.controller = &controller;
     status_screen.config_screen = &config_screen;
     create_status_screen(&status_screen);
 
-    config_screen.controller = controller;
+    config_screen.controller = &controller;
     config_screen.status_screen = status_screen.status_screen;
-    
+
     create_config_screen(&config_screen); // temporarily load config screen as default screen.
 
-    system_screen.Driver = driverInst;
+    system_screen.Driver = &driverInst;
     system_screen.config_screen = config_screen.config_screen;
     system_screen.status_screen = status_screen.status_screen;
     create_system_screen(&system_screen);
 
     config_screen.system_screen = system_screen.system_screen;
-    
 
     lv_scr_load(system_screen.system_screen);
 

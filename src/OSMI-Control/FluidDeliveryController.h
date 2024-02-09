@@ -23,12 +23,12 @@ typedef enum
 class ESP32PwmSpiDriver : public FluidDeliveryDriver
 {
 public:
-    ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin, float pitch, float degreesPerStep);
+    ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin, double pitch, double degreesPerStep);
 
-    float getDistanceMm(void);
+    double getDistanceMm(void);
     unsigned long long getDistanceSteps(void);
 
-    int setVelocity(float mmPerMinute);
+    int setVelocity(double mmPerMinute);
     int getStatus(void);
 
     void disable();
@@ -42,33 +42,38 @@ public:
     void disableInIsr();
     void setStepsInIsr(unsigned long long steps);
 
+    void initialize(void);
+
 private:
     int stepPin;
     int stopPin;
+    int chipSelectPin;
 
     /// @brief Step is full winding step.
-    float distancePerRotMm;
-    float degreesPerStep;
+    double distancePerRotMm;
+    double degreesPerStep;
     unsigned int microStepSetting;
 
-    // Distance in maximum microsteps (256). 
+    gpio_config_t io_conf;
+
+    // Distance in maximum microsteps (256).
     unsigned long long distanceSteps;
 
     EspDriverStatus_t status;
     int inverseDirection = 0;
     DRV8434S microStepperDriver;
-    
+
     void initPWM(void);
     void initPulseCounter(void);
     void initStepperDriver(int chipSelectPin);
-    void initGPIO(int stepPin, int stopPin);
+    void initGPIO();
 };
 
 /// @brief ECE Senior Design Team 11 (2023-2024) Implementation of Control Scheme
 class Team11Control : public FluidDeliveryController
 {
 public:
-    Team11Control(float mlPerMm, FluidDeliveryDriver *driverInstance);
+    Team11Control(double mlPerMm, FluidDeliveryDriver *driverInstance);
     ~Team11Control();
 
     /// @brief  Start the flow
@@ -85,20 +90,20 @@ public:
     /// @param  void
     void reverse(void);
 
-    void setFlow(float flowRateMlPerMin);
-    void setVolumetricConversion(float mlPerMm);
+    void setFlow(double flowRateMlPerMin);
+    void setVolumetricConversion(double mlPerMm);
 
     /// @brief Get Volume in milliliters delivered.
     /// @param  void
     /// @return mL delivered as of now.
-    float getVolumeDelivered(void);
+    double getVolumeDelivered(void);
 
     /// @brief Get the current status of the control system.
     /// @param  void
     /// @return Current state of the system.
     int getStatus(void) { return state; };
 
-    int configureDosage(float bolusRate, float bolusVolume, float infusionRate, float infusionVolume);
+    int configureDosage(double bolusRate, double bolusVolume, double infusionRate, double infusionVolume);
 
     // Gabe, Describe your function here.
     void controlTaskUpdate(void);
@@ -111,18 +116,18 @@ private:
     FastPID *p_Controller;
     FluidDeliveryDriver *driver;
     TaskHandle_t controlTask;
-    float volumePerDistance;
+    double volumePerDistance;
 
-    float kP;
-    float kI;
-    float kD;
+    double kP;
+    double kI;
+    double kD;
 
-    float bolusRate = -1;
-    float bolusVolume = -1;
-    float infusionRate = -1;
-    float infusionVolume = -1;
-    float prevBolusVolume = 0;
-    float currBolusVolume = 0;
+    double bolusRate = -1;
+    double bolusVolume = -1;
+    double infusionRate = -1;
+    double infusionVolume = -1;
+    double prevBolusVolume = 0;
+    double currBolusVolume = 0;
 
     unsigned long startTime = 0;
     unsigned long startPosition = 0;

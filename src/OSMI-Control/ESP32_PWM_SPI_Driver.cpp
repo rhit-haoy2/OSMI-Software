@@ -72,19 +72,15 @@ static void IRAM_ATTR handlePCNTOverflow(void *arg)
 {
     ESP32PwmSpiDriver *driver = (ESP32PwmSpiDriver *)arg;
 
-    Serial.print("PCNT overflow hit ");
-
     uint32_t pcnt_event;
     pcnt_get_event_status(DEFAULT_PCNT_UNIT, &pcnt_event);
     if (pcnt_event == PCNT_EVT_L_LIM)
     {
         driver->setStepsInIsr(driver->getDistanceSteps() - 32768);
-        Serial.println("lower limit.");
     }
     else if (pcnt_event == PCNT_EVT_H_LIM)
     {
         driver->setStepsInIsr(driver->getDistanceSteps() + 32767);
-        Serial.println("upper limit.");
     }
 }
 
@@ -103,8 +99,6 @@ void ESP32PwmSpiDriver::initPulseCounter(void)
     downConfig.pulse_gpio_num = this->stepPin;
 
     esp_err_t pcntConfigSuccess = pcnt_unit_config(&upConfig);
-    Serial.print("PCNT Configured: ");
-    Serial.println(pcntConfigSuccess == ESP_OK ? "True" : "False");
 
     // Enable overflow events.
     pcnt_event_enable(DEFAULT_PCNT_UNIT, PCNT_EVT_H_LIM);
@@ -130,8 +124,7 @@ void ESP32PwmSpiDriver::initPulseCounter(void)
 void ESP32PwmSpiDriver::initPWM(void)
 {
     // See: https://www.esp32.com/viewtopic.php?t=18115
-    Serial.print("Timer Config OK: ");
-    Serial.println(ledc_timer_config(&stepPinTimerConfig) == ESP_OK ? "True" : "False");
+    ledc_timer_config(&stepPinTimerConfig);
 
     stepPinChannelConfig.gpio_num = stepPin;
 
@@ -168,16 +161,8 @@ void ESP32PwmSpiDriver::initStepperDriver(int chipSelectPin)
     Serial.println(microStepperDriver.verifySettings());
 }
 
-void ESP32PwmSpiDriver::initGPIO(int stepPin, int stopPin)
+void ESP32PwmSpiDriver::initGPIO()
 {
-    // esp32 gpio interrupt setup
-    gpio_config_t io_conf = {
-        .pin_bit_mask = (1ull << stopPin),
-        .mode = GPIO_MODE_INPUT,
-        .pull_up_en = GPIO_PULLUP_ENABLE,
-        .intr_type = GPIO_INTR_NEGEDGE,
-    };
-
     ESP_ERROR_CHECK(gpio_config(&io_conf));
     gpio_install_isr_service(ESP_INTR_FLAG_LEVEL3);
     gpio_isr_handler_add((gpio_num_t)stopPin, limitISRHandler, (void *)this);
@@ -193,12 +178,27 @@ void ESP32PwmSpiDriver::initGPIO(int stepPin, int stopPin)
 /// @param stopPin Limit switch pin.
 /// @param pitch Distance per rotation of stepper motor in millimeters.
 /// @param degreesPerStep degrees per step of the stepper motor.
-ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin, float pitch, float degreesPerStep)
+ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin, double pitch, double degreesPerStep)
 {
     this->stepPin = stepPin;
     this->distancePerRotMm = pitch;
     this->degreesPerStep = degreesPerStep;
     this->distanceSteps = 0; // Assumes at 0. Should run thru calibrate routine.
+    this->chipSelectPin = chipSelectPin;
+
+    io_conf = gpio_config_t{
+        .pin_bit_mask = (1ull << stopPin),
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_ENABLE,
+        .intr_type = GPIO_INTR_NEGEDGE,
+    };
+
+    initStepperDriver(chipSelectPin);
+}
+
+void ESP32PwmSpiDriver::initialize()
+{
+    initStepperDriver(chipSelectPin);
 
     // Setup PWM
     initPWM();
@@ -206,22 +206,18 @@ ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin
     // Setup Pulse Counter
     initPulseCounter();
 
-    // initialize motor driver. Blocks 5ms.
-    initStepperDriver(chipSelectPin);
-
     // initialize gpio. Do last for final mux settings.
-    initGPIO(stepPin, stopPin);
+    initGPIO();
 }
 
 /// @brief Get the distance (in mm) away from the endstop.
 /// @return distance (in mm) away from end stop.
-float ESP32PwmSpiDriver::getDistanceMm()
+double ESP32PwmSpiDriver::getDistanceMm()
 {
     unsigned long long microSteps = getDistanceSteps();
 
-    Serial.printf("Distance Steps: %d\n", microSteps);
     // 92160 == 360 deg/rot * 256 uSteps / step
-    float distance = microSteps * degreesPerStep / (92160.0F * distancePerRotMm);
+    double distance = microSteps * degreesPerStep / (92160.0F * distancePerRotMm);
 
     return distance;
 }
@@ -246,13 +242,13 @@ void ESP32PwmSpiDriver::enable()
 
     if (microStepperDriver.verifySettings())
     {
+        Serial.println("Stepper Driver had to be updated.");
         microStepperDriver.applySettings();
     }
 
     // Enable PWM.
     stepPinChannelConfig.duty = 100;
-    Serial.print("PWM Enable OK: ");
-    Serial.println(ledc_channel_config(&stepPinChannelConfig) == ESP_OK ? "True" : "False");
+    ledc_channel_config(&stepPinChannelConfig);
 
     this->status = EspDriverStatus_t::Moving;
 
@@ -266,8 +262,7 @@ void ESP32PwmSpiDriver::disable()
 {
     // disable PWM. Stop motor layer 1.
     stepPinChannelConfig.duty = 0;
-    Serial.print("PWM disable OK: ");
-    Serial.println(ledc_channel_config(&stepPinChannelConfig) == ESP_OK ? "True" : "False");
+    ledc_channel_config(&stepPinChannelConfig);
 
     this->status = EspDriverStatus_t::Stopped;
 }
@@ -303,7 +298,6 @@ void ESP32PwmSpiDriver::setDirection(direction_t direction)
     // Enable both ledc and pcnt on same pin.
     gpio_set_direction((gpio_num_t)stepPin, GPIO_MODE_INPUT_OUTPUT);
     gpio_matrix_out(stepPin, LEDC_HS_SIG_OUT0_IDX + LEDC_CHANNEL_0, 0, 0);
-
 }
 
 /// @brief Get the current direction from the driver.
@@ -315,7 +309,7 @@ direction_t ESP32PwmSpiDriver::getDirection(void)
 }
 
 /// @brief Try to detect an occlusion.
-/// @return 
+/// @return
 bool ESP32PwmSpiDriver::occlusionDetected()
 {
     // Measure torque
@@ -349,7 +343,7 @@ void ESP32PwmSpiDriver::setStepsInIsr(unsigned long long steps)
 /// @brief Set the velocity of the carriage in mm per minute.
 /// @param mmPerMinute The velocity of the carriage.
 /// @return Success == 0, error < 0
-int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
+int ESP32PwmSpiDriver::setVelocity(double mmPerMinute)
 {
 
     if (mmPerMinute < 0)
@@ -357,14 +351,12 @@ int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
         return -1;
     }
 
-    float distancePerStepMm = distancePerRotMm * degreesPerStep / 360.0F;
+    double distancePerStepMm = distancePerRotMm * degreesPerStep / 360.0F;
 
-    float stepPerSecond = mmPerMinute / distancePerStepMm;
+    double stepPerSecond = mmPerMinute / distancePerStepMm;
 
     if (stepPerSecond >= 14000)
     {
-        Serial.printf("Velocity Too high!Too Fast!");
-        Serial.printf("Stepshigh: %f", stepPerSecond, 3);
         return -1;
     }
 
@@ -377,8 +369,6 @@ int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
         microStepSetting = microStepSetting * 2;
         if (microStepSetting > 256)
         {
-            Serial.printf("Velocity Too low! Too Slow!");
-            Serial.printf(" %f Hz\n", stepPerSecond, 3);
             disable();
             return -1;
         }
@@ -419,11 +409,7 @@ int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
 
     stepPerSecond = mmPerMinute * microStepSetting / distancePerStepMm;
 
-    Serial.printf("Microstep: %d\n", microStepSetting);
     uint32_t herz = round(stepPerSecond);
-
-    Serial.print("Step Per Second ");
-    Serial.println(herz, 3);
 
     if (herz <= 0)
     {
@@ -433,9 +419,6 @@ int ESP32PwmSpiDriver::setVelocity(float mmPerMinute)
 
     stepPinTimerConfig.freq_hz = herz;
     esp_err_t timerOk = ledc_timer_config(&stepPinTimerConfig);
-
-    Serial.print("Timer Config OK: ");
-    Serial.println(timerOk == ESP_OK ? "True" : "False");
 
     return 0;
 }
