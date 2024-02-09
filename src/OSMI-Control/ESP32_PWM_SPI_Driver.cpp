@@ -190,10 +190,12 @@ ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin
     };
 
     initStepperDriver(chipSelectPin);
+    mutex = xSemaphoreCreateMutex();
 }
 
 void ESP32PwmSpiDriver::initialize()
 {
+    xSemaphoreTake(mutex, portMAX_DELAY);
     initStepperDriver(chipSelectPin);
 
     // Setup PWM
@@ -204,6 +206,7 @@ void ESP32PwmSpiDriver::initialize()
 
     // initialize gpio. Do last for final mux settings.
     initGPIO();
+    xSemaphoreGive(mutex);
 }
 
 /// @brief Get the distance (in mm) away from the endstop.
@@ -223,16 +226,20 @@ double ESP32PwmSpiDriver::getDistanceMm()
 /// @return Distance in 256 microsteps / actual step.
 unsigned long long ESP32PwmSpiDriver::getDistanceSteps(void)
 {
+    xSemaphoreTake(mutex, portMAX_DELAY);
     int16_t count = 0;
     pcnt_get_counter_value(DEFAULT_PCNT_UNIT, &count);
 
-    return this->distanceSteps + (count * (256 / microStepSetting));
+    
+    long long result = this->distanceSteps + (count * (256 / microStepSetting));
+    xSemaphoreGive(mutex);
+    return result;
 }
 
 /// @brief Turn off the driver.
 void ESP32PwmSpiDriver::enable()
 {
-
+    xSemaphoreTake(mutex, portMAX_DELAY);
     // Re-enable driver.
     microStepperDriver.clearFaults(); // Clear faults on the driver.
 
@@ -251,22 +258,27 @@ void ESP32PwmSpiDriver::enable()
     // Enable Stall Detection learning.
     uint8_t ctrl5 = microStepperDriver.getCachedReg(DRV8434SRegAddr::CTRL5);
     microStepperDriver.setReg(DRV8434SRegAddr::CTRL5, ctrl5 ^ (1 << 6));
+    xSemaphoreGive(mutex);
 }
 
 /// @brief Disable the driver.
 void ESP32PwmSpiDriver::disable()
 {
+    xSemaphoreTake(mutex, portMAX_DELAY);
     // disable PWM. Stop motor layer 1.
     stepPinChannelConfig.duty = 0;
     ledc_channel_config(&stepPinChannelConfig);
 
     this->status = EspDriverStatus_t::Stopped;
+    xSemaphoreGive(mutex);
 }
 
 /// @brief Set the direction of the motor.
 /// @param direction A direction type, either depress or reverse.
 void ESP32PwmSpiDriver::setDirection(direction_t direction)
 {
+    xSemaphoreTake(mutex, portMAX_DELAY);
+
     switch (direction)
     {
     case Reverse:
@@ -284,6 +296,7 @@ void ESP32PwmSpiDriver::setDirection(direction_t direction)
         break;
     }
 
+    xSemaphoreGive(mutex);
 }
 
 /// @brief Get the current direction from the driver.
@@ -324,7 +337,11 @@ void ESP32PwmSpiDriver::disableInIsr()
 /// @param steps the current number of steps
 void ESP32PwmSpiDriver::setStepsInIsr(unsigned long long steps)
 {
+    xSemaphoreTakeFromISR(mutex, nullptr);
+    
     this->distanceSteps = steps;
+
+    xSemaphoreGiveFromISR(mutex, nullptr);
 }
 
 /// @brief Set the velocity of the carriage in mm per minute.
@@ -332,6 +349,7 @@ void ESP32PwmSpiDriver::setStepsInIsr(unsigned long long steps)
 /// @return Success == 0, error < 0
 int ESP32PwmSpiDriver::setVelocity(double mmPerMinute)
 {
+    xSemaphoreTake(mutex, portMAX_DELAY);
 
     if (mmPerMinute < 0)
     {
@@ -406,11 +424,12 @@ int ESP32PwmSpiDriver::setVelocity(double mmPerMinute)
     stepPinTimerConfig.freq_hz = herz;
     esp_err_t timerOk = ledc_timer_config(&stepPinTimerConfig);
 
+    xSemaphoreGive(mutex);
+
     return 0;
 }
 
 int ESP32PwmSpiDriver::getStatus(void)
 {
-    Serial.println("IMPLEMENT ESP32::getStatus!");
     return this->status;
 }

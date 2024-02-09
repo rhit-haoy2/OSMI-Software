@@ -49,6 +49,8 @@ private:
     int stopPin;
     int chipSelectPin;
 
+    SemaphoreHandle_t mutex;
+
     /// @brief Step is full winding step.
     double distancePerRotMm;
     double degreesPerStep;

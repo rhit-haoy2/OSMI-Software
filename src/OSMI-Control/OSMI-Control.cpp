@@ -50,7 +50,7 @@ Team11Control::Team11Control(double volumePerDistance, FluidDeliveryDriver *driv
 
     // create task here with unique handle
     TaskHandle_t handle = 0;
-    xTaskCreate(Team11ControlTask, id.c_str(), 8000, this, 3, &handle); // returns success or fail. if fail should handle, but not now
+    xTaskCreate(Team11ControlTask, id.c_str(), 16000, this, 3, &handle); // returns success or fail. if fail should handle, but not now
     this->controlTask = handle;
 }
 
