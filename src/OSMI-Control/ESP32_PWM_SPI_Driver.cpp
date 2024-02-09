@@ -166,7 +166,6 @@ void ESP32PwmSpiDriver::initGPIO()
     ESP_ERROR_CHECK(gpio_config(&io_conf));
     gpio_install_isr_service(ESP_INTR_FLAG_LEVEL3);
     gpio_isr_handler_add((gpio_num_t)stopPin, limitISRHandler, (void *)this);
-
 }
 
 /// @brief Constructor for ESP32 PWM Serial-Peripheral Interface Driver.
@@ -313,6 +312,7 @@ bool ESP32PwmSpiDriver::occlusionDetected()
     uint16_t torque_low = microStepperDriver.driver.readReg(DRV8434SRegAddr::CTRL8);
     uint16_t torque_high = microStepperDriver.driver.readReg(DRV8434SRegAddr::CTRL9) & 0x0F;
     uint16_t torque = (torque_high << 8) + torque_low;
+
     // Get threshold if learnt.
     uint16_t thresh_low = microStepperDriver.driver.readReg(DRV8434SRegAddr::CTRL6);
     uint16_t thresh_high = microStepperDriver.driver.readReg(DRV8434SRegAddr::CTRL7) & 0x0F;
@@ -370,6 +370,15 @@ int ESP32PwmSpiDriver::setVelocity(double mmPerMinute)
             return -1;
         }
     }
+    stepPerSecond = mmPerMinute * microStepSetting / distancePerStepMm;
+
+    uint32_t herz = round(stepPerSecond);
+
+    if (herz <= 0)
+    {
+        ESP_LOGE(TAG, "Step-Hz less than zero: %.1f%%", stepPerSecond);
+        return -1;
+    }
 
     switch (microStepSetting)
     {
@@ -402,16 +411,6 @@ int ESP32PwmSpiDriver::setVelocity(double mmPerMinute)
         break;
     default:
         break;
-    }
-
-    stepPerSecond = mmPerMinute * microStepSetting / distancePerStepMm;
-
-    uint32_t herz = round(stepPerSecond);
-
-    if (herz <= 0)
-    {
-        ESP_LOGE(TAG, "Step-Hz less than zero: %.1f%%", stepPerSecond);
-        return -1;
     }
 
     stepPinTimerConfig.freq_hz = herz;
