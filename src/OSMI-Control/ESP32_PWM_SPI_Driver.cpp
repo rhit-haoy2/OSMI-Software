@@ -95,8 +95,8 @@ static void IRAM_ATTR limitISRHandler(void *driverInst)
 void ESP32PwmSpiDriver::initPulseCounter(void)
 {
     // Set pulse counter pin.
-    upConfig.pulse_gpio_num = this->stepPin;
-    downConfig.pulse_gpio_num = this->stepPin;
+    upConfig.pulse_gpio_num = 24;
+    downConfig.pulse_gpio_num = 24;
 
     esp_err_t pcntConfigSuccess = pcnt_unit_config(&upConfig);
 
@@ -167,9 +167,6 @@ void ESP32PwmSpiDriver::initGPIO()
     gpio_install_isr_service(ESP_INTR_FLAG_LEVEL3);
     gpio_isr_handler_add((gpio_num_t)stopPin, limitISRHandler, (void *)this);
 
-    // Enable both ledc and pcnt on same pin.
-    gpio_set_direction((gpio_num_t)stepPin, GPIO_MODE_INPUT_OUTPUT);
-    gpio_matrix_out(stepPin, LEDC_HS_SIG_OUT0_IDX + LEDC_CHANNEL_0, 0, 0);
 }
 
 /// @brief Constructor for ESP32 PWM Serial-Peripheral Interface Driver.
