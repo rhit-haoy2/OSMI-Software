@@ -109,24 +109,6 @@ void create_system_screen(system_screen_t *screen){
     lv_label_set_text(temporary_label, "OSMI Home");
 
     // container for entering other screens.
-    lv_obj_t *systemsettings_container = lv_obj_create(screen->system_screen);
-    lv_obj_set_flex_flow(systemsettings_container, LV_FLEX_FLOW_ROW);
-    lv_obj_set_size(systemsettings_container, 230, 70);
-
-
-    temporary_label = lv_label_create(systemsettings_container);
-    lv_label_set_text(temporary_label, "System Settings: ");
-
-
-    screen->syssetEdit_button = lv_btn_create(systemsettings_container);
-    temporary_label = lv_label_create(screen->syssetEdit_button);
-    lv_label_set_text(temporary_label, "Edit");
-    lv_obj_center(temporary_label);
-    lv_obj_set_user_data(screen->syssetEdit_button,screen);
-    lv_obj_add_event_cb(screen->syssetEdit_button, syssetEdit_button_handler, LV_EVENT_RELEASED, screen);
-
-
-
     lv_obj_t *dossettings_container = lv_obj_create(screen->system_screen);
     lv_obj_set_flex_flow(dossettings_container, LV_FLEX_FLOW_ROW);
     lv_obj_set_size(dossettings_container, 230, 70);
