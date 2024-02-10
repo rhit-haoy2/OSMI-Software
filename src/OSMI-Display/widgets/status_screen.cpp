@@ -21,11 +21,15 @@ void my_timer(lv_timer_t * timer)
     float bolusrate = config_screen_get_bolus_rate(screen->config_screen);
     float infurate = config_screen_get_infusion_rate(screen->config_screen);
 
-    float boluspercent = 1;
+    float boluspercent = 1.0;
+    float timeleft = infuvolume/infurate;
     if(bolusvolume!=0){
         boluspercent = currentvolume/bolusvolume;
+        timeleft = (bolusvolume/bolusrate) + ((infuvolume-bolusvolume)/infurate);
     }
     float infupercent = currentvolume/infuvolume;
+
+    float timeleft = (bolusvolume/bolusrate) + ((infuvolume-bolusvolume)/infurate);
     
     /*Do something with LVGL*/
     if(boluspercent<1){
@@ -39,9 +43,17 @@ void my_timer(lv_timer_t * timer)
         std::string ratetext = "Current Rate: ";
         char num[32];
         std:
-        sprintf(num, "%f ",bolusrate);
+        sprintf(num, "%.2f ml/sec",bolusrate);
         ratetext += num;
         lv_label_set_text(screen->currentrate_text, ratetext.c_str());
+
+        std::string timetext = "Time Left: estimate";
+        timeleft = ((bolusvolume-screen->controller->getVolumeDelivered())/bolusrate) + ((infuvolume-bolusvolume)/infurate);
+        sprintf(num, "%d sec",timeleft);
+        timetext += num;
+        lv_label_set_text(screen->timeleft_text, timetext.c_str());
+        
+
     }else if(infupercent<1){
         infupercent = infupercent*100;
         int i2 = round(infupercent);
@@ -49,9 +61,18 @@ void my_timer(lv_timer_t * timer)
         lv_bar_set_value(screen->infusion_bar,i2,LV_ANIM_ON);
         std::string ratetext = "Current Rate: ";
         char num[32];
-        sprintf(num, "%f ",infurate);
+        sprintf(num, "%.2f ml/min",infurate);
         ratetext += num;
         lv_label_set_text(screen->currentrate_text, ratetext.c_str());
+
+
+        std::string timetext = "Time Left: estimate";
+        timeleft = ((infuvolume-screen->controller->getVolumeDelivered())/infurate);
+        sprintf(num, "%d sec",timeleft);
+        timetext += num;
+        lv_label_set_text(screen->timeleft_text, timetext.c_str());
+
+
     }else{
         lv_bar_set_value(screen->bolus_bar,100,LV_ANIM_OFF);
         lv_bar_set_value(screen->infusion_bar,100,LV_ANIM_OFF);
@@ -100,24 +121,22 @@ void create_status_screen(status_screen_t *screen)
     screen->timeleft_text = lv_label_create(screen->status_screen);
     std::string timetext = "Time Left: estimate";
     float timeleft = (bolusvolume/bolusrate) + ((infuvolume-bolusvolume)/infurate);
-    sprintf(num, "%d ",timeleft);
-    timetext += num;
-    sprintf(num, "sec");
+    sprintf(num, "%d sec",timeleft);
     timetext += num;
     lv_label_set_text(screen->timeleft_text, timetext.c_str());
 
 
     lv_obj_t * all_bar_container = lv_obj_create(screen->status_screen);
     lv_obj_set_flex_flow(all_bar_container, LV_FLEX_FLOW_ROW);
-    lv_obj_set_size(all_bar_container, 250, 250);
+    lv_obj_set_size(all_bar_container, 230, 250);
 
     lv_obj_t * bolus_bar_container = lv_obj_create(all_bar_container);
     lv_obj_set_flex_flow(bolus_bar_container, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_size(bolus_bar_container, 100, 220);
+    lv_obj_set_size(bolus_bar_container, 90, 220);
 
     lv_obj_t * infusion_bar_container = lv_obj_create(all_bar_container);
     lv_obj_set_flex_flow(infusion_bar_container, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_size(infusion_bar_container, 100, 220);
+    lv_obj_set_size(infusion_bar_container, 90, 220);
 
 
     temporary_label = lv_label_create(bolus_bar_container);
