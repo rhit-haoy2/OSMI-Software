@@ -8,6 +8,7 @@ static void pause_button_handler(lv_event_t *event)
     screen->controller->stopFlow();
     Serial.println("Pause Button Pressed.");
     lv_scr_load(screen->config_screen->config_screen);
+    lv_timer_pause(screen->timer);
 }
 
 void my_timer(lv_timer_t * timer)
@@ -29,7 +30,6 @@ void my_timer(lv_timer_t * timer)
     }
     float infupercent = currentvolume/infuvolume;
 
-    float timeleft = (bolusvolume/bolusrate) + ((infuvolume-bolusvolume)/infurate);
     
     /*Do something with LVGL*/
     if(boluspercent<1){
@@ -43,12 +43,12 @@ void my_timer(lv_timer_t * timer)
         std::string ratetext = "Current Rate: ";
         char num[32];
         std:
-        sprintf(num, "%.2f ml/sec",bolusrate);
+        sprintf(num, "%.2f ml/h",bolusrate);
         ratetext += num;
         lv_label_set_text(screen->currentrate_text, ratetext.c_str());
 
         std::string timetext = "Time Left: estimate";
-        timeleft = ((bolusvolume-screen->controller->getVolumeDelivered())/bolusrate) + ((infuvolume-bolusvolume)/infurate);
+        timeleft = ((bolusvolume-currentvolume)/bolusrate) + ((infuvolume-bolusvolume)/infurate);
         sprintf(num, "%d sec",timeleft);
         timetext += num;
         lv_label_set_text(screen->timeleft_text, timetext.c_str());
@@ -61,14 +61,14 @@ void my_timer(lv_timer_t * timer)
         lv_bar_set_value(screen->infusion_bar,i2,LV_ANIM_ON);
         std::string ratetext = "Current Rate: ";
         char num[32];
-        sprintf(num, "%.2f ml/min",infurate);
+        sprintf(num, "%.2f ml/h",infurate);
         ratetext += num;
         lv_label_set_text(screen->currentrate_text, ratetext.c_str());
 
 
         std::string timetext = "Time Left: estimate";
-        timeleft = ((infuvolume-screen->controller->getVolumeDelivered())/infurate);
-        sprintf(num, "%d sec",timeleft);
+        timeleft = ((infuvolume-currentvolume)/infurate)*3600;
+        sprintf(num, "%.1f sec",timeleft);
         timetext += num;
         lv_label_set_text(screen->timeleft_text, timetext.c_str());
 
@@ -136,7 +136,7 @@ void create_status_screen(status_screen_t *screen)
 
     lv_obj_t * infusion_bar_container = lv_obj_create(all_bar_container);
     lv_obj_set_flex_flow(infusion_bar_container, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_size(infusion_bar_container, 90, 220);
+    lv_obj_set_size(infusion_bar_container, 100, 220);
 
 
     temporary_label = lv_label_create(bolus_bar_container);
@@ -175,6 +175,7 @@ void create_status_screen(status_screen_t *screen)
 
     static int user_data = 10;
     screen->timer = lv_timer_create(my_timer, 1000,  screen);
+    lv_timer_pause(screen->timer);
 
 
 

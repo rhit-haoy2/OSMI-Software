@@ -31,6 +31,8 @@ typedef struct
 
     lv_obj_t *status_screen;
     lv_obj_t *system_screen;
+
+    lv_timer_t *timer;
 } config_screen_t;
 
 /// @brief Create the screen config.
