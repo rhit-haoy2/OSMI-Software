@@ -1,3 +1,13 @@
+/**
+ * @file osmi_roller_selector.cpp
+ * @author Jake Armstrong (armstrjj@rose-hulman.edu)
+ * @brief A series of rollers in tens-ones.tenths per unit.
+ * @version 1.1
+ * @date 2024-02-10
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
 #include "osmi_roller_selector.h"
 #include <stdio.h>
 
@@ -58,7 +68,7 @@ void osmi_roller_selector_create(lv_obj_t *parent, osmi_roller_selector *selecto
     selector->roller_units = lv_roller_create(selector->container);
 
     // Units roller settings.
-    lv_roller_set_options(selector->roller_units, unit_options, LV_ROLLER_MODE_INFINITE);
+    lv_roller_set_options(selector->roller_units, unit_options, LV_ROLLER_MODE_NORMAL);
     lv_roller_set_visible_row_count(selector->roller_units, 2);
     lv_obj_add_flag(selector->roller_units, LV_OBJ_FLAG_EVENT_BUBBLE); // required for proper event handling.
 

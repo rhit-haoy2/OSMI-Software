@@ -11,7 +11,7 @@
 #define SPI_DRIVER_CS 27
 #define MOTOR_PWM_PIN 26
 #define LIMIT_SWITCH_PIN 25
-#define PITCH 1.0F
+#define PITCH 8.0F
 #define DEG_PER_STEP 0.9F
 
 TFT_eSPI tft = TFT_eSPI();

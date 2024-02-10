@@ -1,7 +1,7 @@
 /**
  * @file config_screen.cpp
  * @author Jake Armstrong
- * @brief Helper function for creating the OSMI control config screen.
+ * @brief Dosage configuration screen.
  * @version 0.1
  * @date 2024-01-30
  *
@@ -58,7 +58,7 @@ void create_config_screen(config_screen_t *screen)
     lv_label_set_text(title_label, "Dosage Settings Menu");
 
     const char *numeric_options = "0\n1\n2\n3\n4\n5\n6\n7\n8\n9";
-    const char *default_rates_units = "ml/sec\nml/min\nml/h";
+    const char *default_rates_units = "ml/min\nml/h";
     // create unit selectors.
     //  For labels between objects.
     lv_obj_t *temporary_label;

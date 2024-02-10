@@ -1,5 +1,17 @@
+/**
+ * @file system_screen.cpp
+ * @author Wei Huang & Jake Armstrong
+ * @brief The "Home" screen for the OSMI pump user interface.
+ * @version 0.1
+ * @date 2024-02-10
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
 #include "system_screen.h"
 
+/// @brief 
+/// @param event 
 static void syssetEdit_button_handler(lv_event_t *event)
 {
     system_screen_t *screen = (system_screen_t *)lv_obj_get_user_data(event->target);
