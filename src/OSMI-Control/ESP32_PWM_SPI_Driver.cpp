@@ -165,7 +165,7 @@ void ESP32PwmSpiDriver::initGPIO()
     gpio_install_isr_service(ESP_INTR_FLAG_LEVEL3);
     gpio_isr_handler_add((gpio_num_t)stopPin, limitISRHandler, (void *)this);
 
-    gpio_set_direction((gpio_num_t) stepPin, GPIO_MODE_INPUT_OUTPUT);
+    gpio_set_direction((gpio_num_t)stepPin, GPIO_MODE_INPUT_OUTPUT);
     gpio_matrix_in(stepPin, PCNT_SIG_CH0_IN1_IDX, 0);
     gpio_matrix_out(stepPin, LEDC_HS_SIG_OUT0_IDX + LEDC_CHANNEL_0, 1, 0);
 }
@@ -229,13 +229,21 @@ double ESP32PwmSpiDriver::getDistanceMm()
 int64_t ESP32PwmSpiDriver::getDistanceSteps(void)
 {
     xSemaphoreTake(mutex, portMAX_DELAY);
-    int16_t count = 0;
-    pcnt_get_counter_value(DEFAULT_PCNT_UNIT, &count);
-
-    int64_t longCount = (int64_t) count;
-    int64_t result = this->distanceSteps + (longCount * (256 / microStepSetting));
+    unsigned long globalTime = millis() - this->pulseTime;
+    if (status == Moving)
+    {
+        int64_t longCount = globalTime * frequency / 1000;
+        if (getDirection() == Depress)
+        {
+            longCount = 0 - longCount;
+        }
+        int64_t result = this->distanceSteps + (longCount * (256 / microStepSetting));
+        this->distanceSteps = result;
+    }
+    this->pulseTime = millis();
     xSemaphoreGive(mutex);
-    return result;
+    
+    return this->distanceSteps;
 }
 
 /// @brief Turn off the driver.
@@ -254,6 +262,8 @@ void ESP32PwmSpiDriver::enable()
     // Enable PWM.
     stepPinChannelConfig.duty = 100;
     ledc_channel_config(&stepPinChannelConfig);
+
+    this->pulseTime = millis();
 
     this->status = EspDriverStatus_t::Moving;
 
@@ -340,7 +350,7 @@ void ESP32PwmSpiDriver::disableInIsr()
 void ESP32PwmSpiDriver::setStepsInIsr(int64_t steps)
 {
     xSemaphoreTakeFromISR(mutex, nullptr);
-    
+
     this->distanceSteps = steps;
 
     xSemaphoreGiveFromISR(mutex, nullptr);
@@ -351,6 +361,7 @@ void ESP32PwmSpiDriver::setStepsInIsr(int64_t steps)
 /// @return Success == 0, error < 0
 int ESP32PwmSpiDriver::setVelocity(double mmPerMinute)
 {
+    getDistanceSteps();
     xSemaphoreTake(mutex, portMAX_DELAY);
 
     if (mmPerMinute < 0)
@@ -425,7 +436,8 @@ int ESP32PwmSpiDriver::setVelocity(double mmPerMinute)
 
     stepPinTimerConfig.freq_hz = herz;
     esp_err_t timerOk = ledc_timer_config(&stepPinTimerConfig);
-
+    this->pulseTime = millis();
+    this->frequency = herz;
     xSemaphoreGive(mutex);
 
     return 0;

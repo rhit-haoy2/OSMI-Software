@@ -52,6 +52,8 @@ private:
     double distancePerRotMm;
     double degreesPerStep;
     unsigned int microStepSetting;
+    unsigned long pulseTime;
+    int frequency;
 
     gpio_config_t io_conf;
 
