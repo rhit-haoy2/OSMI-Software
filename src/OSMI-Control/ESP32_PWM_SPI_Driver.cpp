@@ -63,9 +63,6 @@ static ledc_timer_config_t stepPinTimerConfig = {
     .clk_cfg = LEDC_AUTO_CLK,
 };
 
-// Allows for static inversion of counting up or down.
-static pcnt_config_t *configs[2] = {&upConfig, &downConfig};
-
 static pcnt_isr_handle_t isrHandle = 0;
 
 static void IRAM_ATTR handlePCNTOverflow(void *arg)
@@ -95,10 +92,10 @@ static void IRAM_ATTR limitISRHandler(void *driverInst)
 void ESP32PwmSpiDriver::initPulseCounter(void)
 {
     // Set pulse counter pin.
-    upConfig.pulse_gpio_num = 24;
-    downConfig.pulse_gpio_num = 24;
+    upConfig.pulse_gpio_num = stepPin;
+    downConfig.pulse_gpio_num = stepPin;
 
-    esp_err_t pcntConfigSuccess = pcnt_unit_config(&upConfig);
+    pcnt_unit_config(&downConfig);
 
     // Enable overflow events.
     pcnt_event_enable(DEFAULT_PCNT_UNIT, PCNT_EVT_H_LIM);
@@ -166,6 +163,9 @@ void ESP32PwmSpiDriver::initGPIO()
     ESP_ERROR_CHECK(gpio_config(&io_conf));
     gpio_install_isr_service(ESP_INTR_FLAG_LEVEL3);
     gpio_isr_handler_add((gpio_num_t)stopPin, limitISRHandler, (void *)this);
+
+    gpio_set_direction((gpio_num_t)stepPin, GPIO_MODE_INPUT_OUTPUT);
+    gpio_matrix_out(stepPin, LEDC_HS_SIG_OUT0_IDX + LEDC_CHANNEL_0, 0, 0);
 }
 
 /// @brief Constructor for ESP32 PWM Serial-Peripheral Interface Driver.
@@ -284,14 +284,14 @@ void ESP32PwmSpiDriver::setDirection(direction_t direction)
     case Reverse:
         // set the pulse counter direction the inverse of up / down.
         Serial.println("Reverse");
-        pcnt_unit_config(&downConfig);
+        pcnt_unit_config(&upConfig);
         microStepperDriver.setDirection(false); // todo confirm directioning or make reconfigurable.
         break;
     case Depress:
     default:
         // Change pulse counter direction to count up.
         Serial.println("Forward");
-        pcnt_unit_config(&upConfig);
+        pcnt_unit_config(&downConfig);
         microStepperDriver.setDirection(true);
         break;
     }
