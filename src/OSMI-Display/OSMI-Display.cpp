@@ -166,7 +166,6 @@ void DisplayTask(void *params)
 
     config_screen.controller = &controller;
     config_screen.status_screen = status_screen.status_screen;
-    config_screen.timer = status_screen.timer;
 
     create_config_screen(&config_screen); // temporarily load config screen as default screen.
 
