@@ -26,7 +26,7 @@ public:
     ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin, double pitch, double degreesPerStep);
 
     double getDistanceMm(void);
-    unsigned long long getDistanceSteps(void);
+    long long getDistanceSteps(void);
 
     int setVelocity(double mmPerMinute);
     int getStatus(void);
@@ -40,7 +40,7 @@ public:
     bool occlusionDetected(void);
 
     void disableInIsr();
-    void setStepsInIsr(unsigned long long steps);
+    void setStepsInIsr(long long steps);
 
     void initialize(void);
 
@@ -59,7 +59,7 @@ private:
     gpio_config_t io_conf;
 
     // Distance in maximum microsteps (256).
-    unsigned long long distanceSteps;
+    long long distanceSteps;
 
     EspDriverStatus_t status;
     int inverseDirection = 0;

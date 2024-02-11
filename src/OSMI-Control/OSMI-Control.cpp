@@ -23,6 +23,7 @@ double currentvelocity;
 void Team11ControlTask(void *parameters)
 {
     Team11Control *controlSystem = (Team11Control *)parameters;
+    delay(1000);
 
     while (1)
     {

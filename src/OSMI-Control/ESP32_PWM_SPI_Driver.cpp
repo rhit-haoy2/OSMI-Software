@@ -164,9 +164,9 @@ void ESP32PwmSpiDriver::initGPIO()
     gpio_install_isr_service(ESP_INTR_FLAG_LEVEL3);
     gpio_isr_handler_add((gpio_num_t)stopPin, limitISRHandler, (void *)this);
 
-    gpio_set_direction((gpio_num_t)stepPin, GPIO_MODE_INPUT_OUTPUT);
+    gpio_set_direction((gpio_num_t) stepPin, GPIO_MODE_INPUT_OUTPUT);
     gpio_matrix_in(stepPin, PCNT_SIG_CH0_IN0_IDX, 0);
-    gpio_matrix_out(stepPin, LEDC_HS_SIG_OUT0_IDX + LEDC_CHANNEL_0, 0, 0);
+    gpio_matrix_out(stepPin, LEDC_HS_SIG_OUT0_IDX + LEDC_CHANNEL_0, 1, 0);
 }
 
 /// @brief Constructor for ESP32 PWM Serial-Peripheral Interface Driver.
@@ -214,7 +214,7 @@ void ESP32PwmSpiDriver::initialize()
 /// @return distance (in mm) away from end stop.
 double ESP32PwmSpiDriver::getDistanceMm()
 {
-    unsigned long long microSteps = getDistanceSteps();
+    long long microSteps = getDistanceSteps();
 
     // 92160 == 360 deg/rot * 256 uSteps / step
     double distance = microSteps * degreesPerStep / (92160.0F * distancePerRotMm);
@@ -225,7 +225,7 @@ double ESP32PwmSpiDriver::getDistanceMm()
 /// @brief Get the distance in micro-steps.
 /// @param  void
 /// @return Distance in 256 microsteps / actual step.
-unsigned long long ESP32PwmSpiDriver::getDistanceSteps(void)
+long long ESP32PwmSpiDriver::getDistanceSteps(void)
 {
     xSemaphoreTake(mutex, portMAX_DELAY);
     int16_t count = 0;
@@ -336,7 +336,7 @@ void ESP32PwmSpiDriver::disableInIsr()
 
 /// @brief sets the current number of steps from an ISR. Do not call this function in userspace.
 /// @param steps the current number of steps
-void ESP32PwmSpiDriver::setStepsInIsr(unsigned long long steps)
+void ESP32PwmSpiDriver::setStepsInIsr(long long steps)
 {
     xSemaphoreTakeFromISR(mutex, nullptr);
     
