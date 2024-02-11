@@ -175,7 +175,7 @@ void create_status_screen(status_screen_t *screen)
 
     static int user_data = 10;
     screen->timer = lv_timer_create(my_timer, 1000,  screen);
-    lv_timer_pause(screen->timer);
+    //lv_timer_pause(screen->timer);
 
 
 
