@@ -28,7 +28,7 @@ void SelfStartTestTask(void *params)
     default:
         // Todo: modify main.cpp, pass in the display config
         display_config_t *displayConfig = (display_config_t *)params;
-        BaseType_t dispSuccess = xTaskCreate(DisplayTask, "DISP", 64000, &displayConfig, 2, nullptr);
+        BaseType_t dispSuccess = xTaskCreate(DisplayTask, "DISP", 80000, &displayConfig, 2, nullptr);
         vTaskDelete(NULL); // Delete POST Task.
         break;
     }

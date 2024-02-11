@@ -6,10 +6,7 @@
 #include <esp_log.h>
 #include <DRV8434S.h>
 
-#define PWM_TIMER LEDC_TIMER_2
-#define PWM_SPEED ledc_mode_t::LEDC_HIGH_SPEED_MODE
-#define PWM_CHANNEL LEDC_CHANNEL_4
-#define DEFAULT_PCNT_UNIT PCNT_UNIT_0
+#define DEFAULT_PCNT_UNIT PCNT_UNIT_1
 
 typedef enum
 {

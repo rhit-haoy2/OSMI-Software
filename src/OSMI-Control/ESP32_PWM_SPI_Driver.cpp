@@ -165,7 +165,7 @@ void ESP32PwmSpiDriver::initGPIO()
     gpio_isr_handler_add((gpio_num_t)stopPin, limitISRHandler, (void *)this);
 
     gpio_set_direction((gpio_num_t) stepPin, GPIO_MODE_INPUT_OUTPUT);
-    gpio_matrix_in(stepPin, PCNT_SIG_CH0_IN0_IDX, 0);
+    gpio_matrix_in(stepPin, PCNT_SIG_CH0_IN1_IDX, 0);
     gpio_matrix_out(stepPin, LEDC_HS_SIG_OUT0_IDX + LEDC_CHANNEL_0, 1, 0);
 }
 
@@ -231,8 +231,8 @@ long long ESP32PwmSpiDriver::getDistanceSteps(void)
     int16_t count = 0;
     pcnt_get_counter_value(DEFAULT_PCNT_UNIT, &count);
 
-    
-    long long result = this->distanceSteps + (count * (256 / microStepSetting));
+    long longCount = (long) count;
+    long long result = this->distanceSteps + (longCount * (256 / microStepSetting));
     xSemaphoreGive(mutex);
     return result;
 }

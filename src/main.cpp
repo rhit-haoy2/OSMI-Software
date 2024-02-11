@@ -31,7 +31,7 @@ void setup(void)
 #ifdef SKIP_POST // skip post for development.
 	BaseType_t dispSuccess = xTaskCreate(DisplayTask, "DISP", 64000, nullptr, 2, nullptr);
 #else
-	BaseType_t postSuccess = xTaskCreate(SelfStartTestTask, "POST", 1280, nullptr, configMAX_PRIORITIES, nullptr);
+	BaseType_t postSuccess = xTaskCreate(SelfStartTestTask, "POST", 12000, nullptr, configMAX_PRIORITIES, nullptr);
 #endif
 }
 
