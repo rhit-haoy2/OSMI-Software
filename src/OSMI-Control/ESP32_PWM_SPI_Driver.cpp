@@ -103,7 +103,8 @@ void ESP32PwmSpiDriver::initPulseCounter(void)
 
     // pause for isr configs.
     pcnt_counter_pause(DEFAULT_PCNT_UNIT);
-    pcnt_filter_disable(DEFAULT_PCNT_UNIT);
+    pcnt_filter_enable(DEFAULT_PCNT_UNIT);
+    pcnt_set_filter_value(DEFAULT_PCNT_UNIT, 1);
 
     // install ISR service
     pcnt_isr_service_install(0);
@@ -214,7 +215,7 @@ void ESP32PwmSpiDriver::initialize()
 /// @return distance (in mm) away from end stop.
 double ESP32PwmSpiDriver::getDistanceMm()
 {
-    long long microSteps = getDistanceSteps();
+    int64_t microSteps = getDistanceSteps();
 
     // 92160 == 360 deg/rot * 256 uSteps / step
     double distance = microSteps * degreesPerStep / (92160.0F * distancePerRotMm);
@@ -225,14 +226,14 @@ double ESP32PwmSpiDriver::getDistanceMm()
 /// @brief Get the distance in micro-steps.
 /// @param  void
 /// @return Distance in 256 microsteps / actual step.
-long long ESP32PwmSpiDriver::getDistanceSteps(void)
+int64_t ESP32PwmSpiDriver::getDistanceSteps(void)
 {
     xSemaphoreTake(mutex, portMAX_DELAY);
     int16_t count = 0;
     pcnt_get_counter_value(DEFAULT_PCNT_UNIT, &count);
 
-    long longCount = (long) count;
-    long long result = this->distanceSteps + (longCount * (256 / microStepSetting));
+    int64_t longCount = (int64_t) count;
+    int64_t result = this->distanceSteps + (longCount * (256 / microStepSetting));
     xSemaphoreGive(mutex);
     return result;
 }
@@ -336,7 +337,7 @@ void ESP32PwmSpiDriver::disableInIsr()
 
 /// @brief sets the current number of steps from an ISR. Do not call this function in userspace.
 /// @param steps the current number of steps
-void ESP32PwmSpiDriver::setStepsInIsr(long long steps)
+void ESP32PwmSpiDriver::setStepsInIsr(int64_t steps)
 {
     xSemaphoreTakeFromISR(mutex, nullptr);
     

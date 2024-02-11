@@ -56,7 +56,7 @@ private:
     gpio_config_t io_conf;
 
     // Distance in maximum microsteps (256).
-    long long distanceSteps;
+    int64_t distanceSteps;
 
     EspDriverStatus_t status;
     int inverseDirection = 0;
