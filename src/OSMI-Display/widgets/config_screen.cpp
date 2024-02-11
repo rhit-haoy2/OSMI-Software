@@ -18,6 +18,7 @@ static void confirm_button_handler(lv_event_t *event)
     int success = screen->controller->configureDosage(screen->bolus_rate.value, screen->bolus_volume.value, screen->infusion_rate.value, screen->infusion_volume.value);
     screen->controller->getDriver()->setDirection(Depress);
     screen->controller->startFlow();
+    lv_timer_resume(screen->timer);
     
 
 

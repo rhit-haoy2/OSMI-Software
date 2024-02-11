@@ -8,6 +8,7 @@ static void pause_button_handler(lv_event_t *event)
     screen->controller->stopFlow();
     Serial.println("Pause Button Pressed.");
     lv_scr_load(screen->config_screen->config_screen);
+    lv_timer_pause(screen->timer);
 }
 
 void my_timer(lv_timer_t * timer)
@@ -174,7 +175,8 @@ void create_status_screen(status_screen_t *screen)
 
     static int user_data = 10;
     screen->timer = lv_timer_create(my_timer, 1000,  screen);
-
+    lv_timer_pause(screen->timer);
+    
 
 
 
