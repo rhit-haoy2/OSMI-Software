@@ -111,7 +111,7 @@ void create_status_screen(status_screen_t *screen)
     std::string ratetext = "Current Rate: ";
     char num[5];
     std:
-    sprintf(num, "%f ",bolusrate);
+    sprintf(num, "%.2f ml/h",bolusrate);
     ratetext += num;
     lv_label_set_text(screen->currentrate_text, ratetext.c_str());
 
@@ -120,7 +120,7 @@ void create_status_screen(status_screen_t *screen)
     screen->timeleft_text = lv_label_create(screen->status_screen);
     std::string timetext = "Time Left: estimate";
     float timeleft = (bolusvolume/bolusrate) + ((infuvolume-bolusvolume)/infurate);
-    sprintf(num, "%d sec",timeleft);
+    sprintf(num, "%.1f sec",timeleft*3600);
     timetext += num;
     lv_label_set_text(screen->timeleft_text, timetext.c_str());
 
