@@ -333,7 +333,7 @@ bool ESP32PwmSpiDriver::occlusionDetected()
     uint16_t thresh_high = microStepperDriver.driver.readReg(DRV8434SRegAddr::CTRL7) & 0x0F;
     uint16_t threshold = (thresh_high << 8) + thresh_low;
 
-    return torque <= threshold; // Torque approaches zero as more greatly loaded.
+    return torque < threshold; // Torque approaches zero as more greatly loaded.
 }
 
 /// @brief Stop the counter and reset to zero.

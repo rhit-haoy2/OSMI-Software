@@ -17,6 +17,7 @@ void my_timer(lv_timer_t * timer)
     status_screen_t * screen = (status_screen_t *)timer->user_data;
 
     float currentvolume = screen->controller->getVolumeDelivered();
+    currentvolume = abs(currentvolume);
     float bolusvolume = config_screen_get_bolus_volume(screen->config_screen);
     float infuvolume = config_screen_get_infusion_volume(screen->config_screen);
     float bolusrate = config_screen_get_bolus_rate(screen->config_screen);
