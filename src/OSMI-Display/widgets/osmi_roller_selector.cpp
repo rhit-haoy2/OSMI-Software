@@ -29,10 +29,10 @@ static void osmi_roller_event_handler(lv_event_t *event)
 
     if (lv_roller_get_option_cnt(selector->roller_units) > 1) {
         switch(lv_roller_get_selected(selector->roller_units)) {
-            case 0: // ml/sec
-                selector->value = selector->value * 60.0f;
+            case 0: // ml/min
+                selector->value = selector->value;
                 break;
-            case 2: // ml / hr
+            case 1: // ml / hr
                 selector->value = selector->value / 60.0f;
                 break;
             default:
