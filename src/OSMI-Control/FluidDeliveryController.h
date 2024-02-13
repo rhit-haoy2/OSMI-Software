@@ -92,7 +92,6 @@ public:
     void reverse(void);
 
     void setFlow(double flowRateMlPerMin);
-    void setVolumetricConversion(double mlPerMm);
 
     /// @brief Get Volume in milliliters delivered.
     /// @param  void
