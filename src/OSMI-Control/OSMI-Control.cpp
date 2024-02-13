@@ -120,9 +120,7 @@ void Team11Control::controlTaskUpdate()
 
     // Set velocity for cases 2 & 1.
 
-    double err = setpoint_mm_per_min - (feedback_mm_per_ms / 60000.0F);
-
-    double new_speed_mm_per_min = (setpoint_mm_per_min + (err * kP) + (err * kI) + (err * kD));
+    double new_speed_mm_per_min = setpoint_mm_per_min;
 
     if (new_speed_mm_per_min > 80)
     {
