@@ -41,18 +41,14 @@ void my_timer(lv_timer_t * timer)
         lv_bar_set_value(screen->bolus_bar,i1,LV_ANIM_ON);
         lv_bar_set_value(screen->infusion_bar,i2,LV_ANIM_ON);
 
-        std::string ratetext = "Current Rate: ";
-        char num[32];
-        std:
-        sprintf(num, "%.2f ml/h",bolusrate);
-        ratetext += num;
-        lv_label_set_text(screen->currentrate_text, ratetext.c_str());
+        char rateText[64];
+        sprintf(rateText, "Current Rate: %.2f ml/min",bolusrate);
+        lv_label_set_text(screen->currentrate_text, rateText);
 
-        std::string timetext = "Time Left: estimate";
-        timeleft = ((bolusvolume-currentvolume)/bolusrate) + ((infuvolume-bolusvolume)/infurate);
-        sprintf(num, "%d sec",timeleft);
-        timetext += num;
-        lv_label_set_text(screen->timeleft_text, timetext.c_str());
+        timeleft = (((bolusvolume-currentvolume)/bolusrate) + ((infuvolume-bolusvolume)/infurate))*60;
+        char timeText[64];
+        sprintf(timeText, "Time Left: estimate %.1f sec",timeleft);
+        lv_label_set_text(screen->timeleft_text, timeText);
         
 
     }else if(infupercent<1){
@@ -60,18 +56,14 @@ void my_timer(lv_timer_t * timer)
         int i2 = round(infupercent);
         lv_bar_set_value(screen->bolus_bar,100,LV_ANIM_ON);
         lv_bar_set_value(screen->infusion_bar,i2,LV_ANIM_ON);
-        std::string ratetext = "Current Rate: ";
-        char num[32];
-        sprintf(num, "%.2f ml/h",infurate);
-        ratetext += num;
-        lv_label_set_text(screen->currentrate_text, ratetext.c_str());
+        char rateText[64];
+        sprintf(rateText, "Current Rate: %.2f ml/min",infurate);
+        lv_label_set_text(screen->currentrate_text, rateText);
 
-
-        std::string timetext = "Time Left: estimate";
-        timeleft = ((infuvolume-currentvolume)/infurate)*3600;
-        sprintf(num, "%.1f sec",timeleft);
-        timetext += num;
-        lv_label_set_text(screen->timeleft_text, timetext.c_str());
+        char timeText[64];
+        timeleft = ((infuvolume-currentvolume)/infurate)*60;
+        sprintf(timeText, "Time Left: estimate %.1f sec",timeleft);
+        lv_label_set_text(screen->timeleft_text, timeText);
 
 
     }else{
@@ -110,21 +102,17 @@ void create_status_screen(status_screen_t *screen)
 
 
     screen->currentrate_text = lv_label_create(screen->status_screen);
-    std::string ratetext = "Current Rate: ";
-    char num[5];
-    std:
-    sprintf(num, "%.2f ml/h",bolusrate);
-    ratetext += num;
-    lv_label_set_text(screen->currentrate_text, ratetext.c_str());
+    char num[32];
+    sprintf(num, "Current Rate: %.2f ml/h",bolusrate);
+    lv_label_set_text(screen->currentrate_text, num);
 
     
     
     screen->timeleft_text = lv_label_create(screen->status_screen);
-    std::string timetext = "Time Left: estimate";
+    char timetext[32];
     float timeleft = (bolusvolume/bolusrate) + ((infuvolume-bolusvolume)/infurate);
-    sprintf(num, "%.1f sec",timeleft*3600);
-    timetext += num;
-    lv_label_set_text(screen->timeleft_text, timetext.c_str());
+    sprintf(timetext, "Time Left: estimate %.1f sec",timeleft*60);
+    lv_label_set_text(screen->timeleft_text, timetext);
 
 
     lv_obj_t * all_bar_container = lv_obj_create(screen->status_screen);

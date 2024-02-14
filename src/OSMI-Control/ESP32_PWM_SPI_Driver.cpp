@@ -217,10 +217,10 @@ void ESP32PwmSpiDriver::initialize()
 /// @return distance (in mm) away from end stop.
 double ESP32PwmSpiDriver::getDistanceMm()
 {
-    int64_t microSteps = getDistanceSteps();
+    int64_t Steps = getDistanceSteps();
 
     // 92160 == 360 deg/rot * 256 uSteps / step
-    double distance = microSteps * degreesPerStep / (92160.0F * distancePerRotMm);
+    double distance = ((Steps * degreesPerStep) / 92160.0F) * distancePerRotMm;
 
     return distance;
 }
