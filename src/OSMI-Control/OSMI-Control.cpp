@@ -10,7 +10,7 @@
 #define GROUP timer_group_t::TIMER_GROUP_0
 #define TIMER timer_idx_t::TIMER_1
 
-#define CONTROL_FREQ 2
+#define CONTROL_FREQ 10
 
 #define TIMER_DIVIDER 8
 #define TIMER_SCALE (TIMER_BASE_CLK / TIMER_DIVIDER)
@@ -57,6 +57,22 @@ Team11Control::Team11Control(double volumePerDistance, FluidDeliveryDriver *driv
 
 void Team11Control::controlTaskUpdate()
 {
+    bool startCommand;
+    if (xQueueReceive(this->startQueue, &startCommand, 1) == pdTRUE) // receive start command.
+    {
+        if (startCommand)
+        {
+            driver->enable();
+            state = 1;
+            startPosition = 0;
+            startTime = millis();
+        }
+        else
+        {
+            driver->disable();
+            state = 0;
+        }
+    }
 
     double setpoint_mm_per_min;
     // global start time (no bolus)
@@ -72,21 +88,6 @@ void Team11Control::controlTaskUpdate()
     double feedback_mm_per_ms = (feedback_mm) * 1000 / curr_time_ms;
 
     bool detected = driver->occlusionDetected() && false; // occlusion detection currently disabled.
-
-    bool startCommand;
-    if (xQueueReceive(this->startQueue, &startCommand, 1) == pdTRUE)
-    {
-        if (startCommand)
-        {
-            driver->enable();
-            state = 1;
-        }
-        else
-        {
-            driver->disable();
-            state = 0;
-        }
-    }
 
     // Switch State
     switch (this->state)
@@ -156,9 +157,6 @@ Team11Control::~Team11Control()
 
 bool Team11Control::startFlow()
 {
-    startPosition = 0;
-    startTime = millis();
-    this->state = 1;
     bool start = true;
     xQueueSend(this->startQueue, &start, portMAX_DELAY);
     return true;

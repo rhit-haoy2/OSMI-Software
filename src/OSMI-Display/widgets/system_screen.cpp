@@ -32,7 +32,7 @@ static void resetinfufast_button_handler(lv_event_t *event){
     if(code == LV_EVENT_PRESSED){
         screen->Driver->disable();
         screen->Driver->setDirection(Reverse);
-        screen->Driver->setVelocity(0.1);
+        screen->Driver->setVelocity(1);
         screen->Driver->enable();
     }else if(code == LV_EVENT_RELEASED){
         screen->Driver->disable();
@@ -48,7 +48,7 @@ static void resetinfuslow_button_handler(lv_event_t *event){
     if(code == LV_EVENT_PRESSED){
         screen->Driver->disable();
         screen->Driver->setDirection(Reverse);
-        screen->Driver->setVelocity(0.01);
+        screen->Driver->setVelocity(40);
         screen->Driver->enable();
     }else if(code == LV_EVENT_RELEASED){
         screen->Driver->disable();
@@ -64,7 +64,7 @@ static void forwardinfufast_button_handler(lv_event_t *event){
     if(code == LV_EVENT_PRESSED){
         screen->Driver->disable();
         screen->Driver->setDirection(Depress);
-        screen->Driver->setVelocity(0.1);
+        screen->Driver->setVelocity(1);
         screen->Driver->enable();
     }else if(code == LV_EVENT_RELEASED){
         screen->Driver->disable();
@@ -80,7 +80,7 @@ static void forwardinfuslow_button_handler(lv_event_t *event){
     if(code == LV_EVENT_PRESSED){
         screen->Driver->disable();
         screen->Driver->setDirection(Depress);
-        screen->Driver->setVelocity(0.01);
+        screen->Driver->setVelocity(40);
         screen->Driver->enable();
     }else if(code == LV_EVENT_RELEASED){
         screen->Driver->disable();
