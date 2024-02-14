@@ -1,7 +1,6 @@
 
 #ifndef __OSMI_CONTROL_H
 #define __OSMI_CONTROL_H
-#include <FastPID.h>
 #include <Arduino.h>
 #include <hal/ledc_hal.h>
 #include <driver/ledc.h>

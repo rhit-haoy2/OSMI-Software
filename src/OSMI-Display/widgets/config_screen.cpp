@@ -14,13 +14,8 @@ static void confirm_button_handler(lv_event_t *event)
 {
     config_screen_t *screen = (config_screen_t *)lv_obj_get_user_data(event->target);
 
-    screen->controller->stopFlow();
     int success = screen->controller->configureDosage(screen->bolus_rate.value, screen->bolus_volume.value, screen->infusion_rate.value, screen->infusion_volume.value);
     screen->controller->getDriver()->setDirection(Depress);
-    screen->controller->startFlow();
-    lv_timer_resume(screen->timer);
-    
-
 
     // Modal for alerts.
     if (success < 0)
@@ -31,9 +26,12 @@ static void confirm_button_handler(lv_event_t *event)
     {
         lv_scr_load(screen->status_screen);
         screen->controller->startFlow();
-    } else {
+    }
+    else
+    {
         screen->controller->startFlow();
     }
+    lv_timer_resume(screen->timer);
 }
 static void cancel_button_handler(lv_event_t *event)
 {

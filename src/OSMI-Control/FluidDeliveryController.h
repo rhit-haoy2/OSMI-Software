@@ -113,7 +113,6 @@ public:
 private:
     // Task Handle here.
 
-    FastPID *p_Controller;
     FluidDeliveryDriver *driver;
     TaskHandle_t controlTask;
     double volumePerDistance;

@@ -2,7 +2,6 @@
 #include <driver/timer.h>
 #include <freertos/queue.h>
 #include "FluidDeliveryController.h"
-#include <FastPID.h>
 #include <DRV8434S.h>
 
 #include <hal/ledc_hal.h>
@@ -71,7 +70,7 @@ void Team11Control::controlTaskUpdate()
     double feedback_mm = startPosition - this->driver->getDistanceMm();
     double feedback_mm_per_ms = (feedback_mm) * 1000 / curr_time_ms;
 
-    bool detected = driver->occlusionDetected();
+    bool detected = driver->occlusionDetected() && false; // occlusion detection currently disabled.
 
     // Switch State
     switch (this->state)
@@ -122,15 +121,11 @@ void Team11Control::controlTaskUpdate()
 
     double new_speed_mm_per_min = setpoint_mm_per_min;
 
-    if (new_speed_mm_per_min > 80)
-    {
-        new_speed_mm_per_min = 80;
-    }
-
     if (currentvelocity != new_speed_mm_per_min)
     {
         currentvelocity = new_speed_mm_per_min;
-        this->driver->setVelocity(new_speed_mm_per_min);
+        int success = this->driver->setVelocity(new_speed_mm_per_min);
+        if(success < 0) state = 0;
     }
 }
 
@@ -143,7 +138,7 @@ Team11Control::~Team11Control()
 bool Team11Control::startFlow()
 {
     driver->enable();
-    startPosition = driver->getDistanceMm();
+    startPosition = 0;
     startTime = millis();
     this->state = 1;
     return true;
@@ -192,9 +187,9 @@ int Team11Control::configureDosage(double bolusRate, double bolusVolume, double 
         return -1;
     }
 
-    this->bolusRate = bolusRate;
+    this->bolusRate = bolusRate / volumePerDistance;
     this->bolusVolume = bolusVolume;
-    this->infusionRate = infusionRate;
+    this->infusionRate = infusionRate / volumePerDistance;
     this->infusionVolume = infusionVolume;
 
     return 0;

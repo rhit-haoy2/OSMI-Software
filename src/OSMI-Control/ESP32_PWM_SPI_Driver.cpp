@@ -140,6 +140,7 @@ void ESP32PwmSpiDriver::initStepperDriver(int chipSelectPin)
     microStepperDriver.resetSettings();
     microStepperDriver.disableSPIStep(); // Ensure STEP pin is stepping.
     microStepperDriver.enableSPIDirection();
+    microStepperDriver.enableDriver();
 
     uint8_t ctrl5 = microStepperDriver.getCachedReg(DRV8434SRegAddr::CTRL5);
     ctrl5 = ctrl5 | 0x10;
@@ -154,9 +155,10 @@ void ESP32PwmSpiDriver::initStepperDriver(int chipSelectPin)
     microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep32);
     this->microStepSetting = 32;
 
+    volatile bool settingsApplied = microStepperDriver.verifySettings();
     // todo configure step mode.
     Serial.print("Settings applied: ");
-    Serial.println(microStepperDriver.verifySettings());
+    Serial.println(settingsApplied);
 }
 
 void ESP32PwmSpiDriver::initGPIO()
@@ -252,6 +254,7 @@ void ESP32PwmSpiDriver::enable()
     xSemaphoreTake(mutex, portMAX_DELAY);
     // Re-enable driver.
     microStepperDriver.clearFaults(); // Clear faults on the driver.
+    this->distanceSteps = 0;
 
     if (microStepperDriver.verifySettings())
     {
@@ -369,35 +372,32 @@ int ESP32PwmSpiDriver::setVelocity(double mmPerMinute)
         return -1;
     }
 
-    double distancePerStepMm = distancePerRotMm * degreesPerStep / 360.0F;
+    double microStepPerSecond = mmPerMinute * 360.0 / (distancePerRotMm * degreesPerStep) * 256.0 / 60.0;
 
-    double stepPerSecond = mmPerMinute / distancePerStepMm;
-
-    if (stepPerSecond >= 14000)
+    if (microStepPerSecond < 30) // too slow case.
     {
         return -1;
     }
 
     // full winding step / second.
-    microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep1);
-    microStepSetting = 1;
-    while (stepPerSecond <= 50)
+    microStepperDriver.setStepMode(DRV8434SStepMode::MicroStep256);
+    microStepSetting = 256;
+    while (microStepPerSecond > 10000)
     {
-        stepPerSecond = stepPerSecond * 2;
-        microStepSetting = microStepSetting * 2;
-        if (microStepSetting > 256)
+        if (microStepSetting == 1)
         {
             disable();
             return -1;
         }
+        microStepPerSecond = microStepPerSecond / 2.0;
+        microStepSetting = microStepSetting / 2;
     }
-    stepPerSecond = mmPerMinute * microStepSetting / distancePerStepMm;
 
-    uint32_t herz = round(stepPerSecond);
+    uint32_t herz = round(microStepPerSecond);
 
     if (herz <= 0)
     {
-        ESP_LOGE(TAG, "Step-Hz less than zero: %.1f%%", stepPerSecond);
+        ESP_LOGE(TAG, "Step-Hz less than zero: %.1f%%", microStepPerSecond);
         return -1;
     }
 
@@ -436,6 +436,7 @@ int ESP32PwmSpiDriver::setVelocity(double mmPerMinute)
 
     stepPinTimerConfig.freq_hz = herz;
     esp_err_t timerOk = ledc_timer_config(&stepPinTimerConfig);
+
     this->pulseTime = millis();
     this->frequency = herz;
     xSemaphoreGive(mutex);

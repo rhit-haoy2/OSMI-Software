@@ -12,12 +12,12 @@
 #define MOTOR_PWM_PIN 26
 #define LIMIT_SWITCH_PIN 25
 #define PITCH 8.0
-#define DEG_PER_STEP 0.9
+#define DEG_PER_STEP 1.8
 #define volumePerDistance 0.66667
 
 TFT_eSPI tft = TFT_eSPI();
 static ESP32PwmSpiDriver driverInst = ESP32PwmSpiDriver(SPI_DRIVER_CS, MOTOR_PWM_PIN, LIMIT_SWITCH_PIN, PITCH, DEG_PER_STEP);
-static Team11Control controller = Team11Control(1, (FluidDeliveryDriver *)&driverInst);
+static Team11Control controller = Team11Control(volumePerDistance, (FluidDeliveryDriver *)&driverInst);
 
 /*Input device driver descriptor*/
 static lv_indev_t *my_indev;
