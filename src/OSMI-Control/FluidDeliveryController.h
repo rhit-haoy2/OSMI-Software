@@ -131,6 +131,7 @@ private:
     unsigned long startTime = 0;
     unsigned long startPosition = 0;
     int state;
+    QueueHandle_t startQueue;
 };
 
 #endif

@@ -52,6 +52,7 @@ Team11Control::Team11Control(double volumePerDistance, FluidDeliveryDriver *driv
     TaskHandle_t handle = 0;
     xTaskCreate(Team11ControlTask, id.c_str(), 16000, this, 3, &handle); // returns success or fail. if fail should handle, but not now
     this->controlTask = handle;
+    this->startQueue = xQueueCreate(5, sizeof(int));
 }
 
 void Team11Control::controlTaskUpdate()
@@ -71,6 +72,21 @@ void Team11Control::controlTaskUpdate()
     double feedback_mm_per_ms = (feedback_mm) * 1000 / curr_time_ms;
 
     bool detected = driver->occlusionDetected() && false; // occlusion detection currently disabled.
+
+    bool startCommand;
+    if (xQueueReceive(this->startQueue, &startCommand, 1) == pdTRUE)
+    {
+        if (startCommand)
+        {
+            driver->enable();
+            state = 1;
+        }
+        else
+        {
+            driver->disable();
+            state = 0;
+        }
+    }
 
     // Switch State
     switch (this->state)
@@ -107,9 +123,11 @@ void Team11Control::controlTaskUpdate()
         return;
     case 2: // infusion delivery
         setpoint_mm_per_min = infusionRate;
+
         break;
     case 1: // bolus delivery
         setpoint_mm_per_min = bolusRate;
+
         break;
 
     case 0:
@@ -125,7 +143,8 @@ void Team11Control::controlTaskUpdate()
     {
         currentvelocity = new_speed_mm_per_min;
         int success = this->driver->setVelocity(new_speed_mm_per_min);
-        if(success < 0) state = 0;
+        if (success < 0)
+            state = 0;
     }
 }
 
@@ -137,10 +156,11 @@ Team11Control::~Team11Control()
 
 bool Team11Control::startFlow()
 {
-    driver->enable();
     startPosition = 0;
     startTime = millis();
     this->state = 1;
+    bool start = true;
+    xQueueSend(this->startQueue, &start, portMAX_DELAY);
     return true;
 }
 
@@ -149,6 +169,8 @@ bool Team11Control::stopFlow()
     this->state = 3;
     driver->disable();
     double feedback = driver->getDistanceMm();
+    bool start = false;
+    xQueueSend(this->startQueue, &start, portMAX_DELAY);
     return true;
 }
 
