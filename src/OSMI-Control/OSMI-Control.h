@@ -2,7 +2,7 @@
 #ifndef __OSMI_CONTROL_H
 #define __OSMI_CONTROL_H
 #include <Arduino.h>
-#include <hal/ledc_hal.h>
+//#include <hal/ledc_hal.h>
 #include <driver/ledc.h>
 
 extern "C"
