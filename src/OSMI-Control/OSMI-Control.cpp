@@ -5,7 +5,7 @@
 #include <DRV8434S.h>
 
 //#include <hal/ledc_hal.h>
-//#include <driver/ledc.h>
+#include <driver/ledc.h>
 
 #define GROUP timer_group_t::TIMER_GROUP_0
 #define TIMER timer_idx_t::TIMER_1

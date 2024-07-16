@@ -5,7 +5,7 @@
 #include "OSMI-Control/OSMI-Control.h"
 #include "OSMI-WIFI/OSMI-WIFI.h"
 // #include "OSMI-StepperDriver/StepperDriver.h"
-//#include "driver/ledc.h"
+#include "driver/ledc.h"
 #include "OSMI-Control/FluidDeliveryController.h"
 
 void SelfStartTestTask(void *params)

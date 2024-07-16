@@ -10,6 +10,8 @@
 #define LIMIT_SWITCH_PIN 25
 #define DIST_PER_STEP 1.0
 
+#define SKIP_POST
+
 #define ESTOP_PIN 34
 #define DEBOUNCE_TIMER_ID 1
 #define DEBOUNCE_PRESCALE 20000
