@@ -5,6 +5,8 @@
 //#include <hal/ledc_hal.h>
 #include <driver/ledc.h>
 
+#define OSMI_DEBUG_MODE
+
 extern "C"
 {
 #include "esp_partition.h"

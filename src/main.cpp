@@ -5,6 +5,12 @@
 #include "OSMI-SelfStart/SelfStart.h"
 #include "OSMI-Control/FluidDeliveryController.h"
 
+
+#ifdef OSMI_DEBUG_MODE
+	
+	#include "esp_log.h"
+#endif
+
 #define SPI_DRIVER_CS 27
 #define MOTOR_PWM_PIN 26
 #define LIMIT_SWITCH_PIN 25
@@ -25,6 +31,11 @@ void setup(void)
 {
 	Serial.begin(115200);
 	Serial.println("[92mOSMI Startup[0m");
+
+	#ifdef OSMI_DEBUG_MODE
+		ESP_LOGD("OSMI_Main", "OSMI main program startup");
+	#endif
+
 	SPI.begin();
 
 	// Create the communication lines between tasks. Usually only one number at a time.
