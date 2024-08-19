@@ -8,6 +8,8 @@
 
 static const char *TAG = "ESP32PwmSpiDriver";
 
+SemaphoreHandle_t buttonSemaphore;
+
 static pcnt_config_t upConfig = {
     // Set PCNT input signal and control GPIOs
     .pulse_gpio_num = PCNT_PIN_NOT_USED,
@@ -81,10 +83,64 @@ static void IRAM_ATTR handlePCNTOverflow(void *arg)
     }
 }
 
+//static void ARDUINO_ISR_ATTR limitISRHandler(void *driverInst)
 static void IRAM_ATTR limitISRHandler(void *driverInst)
 {
     ESP32PwmSpiDriver *driver = (ESP32PwmSpiDriver *)driverInst;
-    driver->disableInIsr();
+
+    xSemaphoreGiveFromISR(buttonSemaphore, NULL);
+
+    #ifdef OSMI_DEBUG_MODE
+        ESP_LOGD("OSMI_Control", "Limit switch triggered");
+    #endif
+
+    //driver->disableInIsr();
+}
+
+
+void buttonTask(void *driverInst) {
+
+    ESP32PwmSpiDriver *driver = (ESP32PwmSpiDriver *)driverInst;
+
+    #ifdef OSMI_DEBUG_MODE
+    if (driver == nullptr) {
+        ESP_LOGE("buttonTask", "Driver instance is null");
+        //vTaskDelete(NULL);  // Terminate the task if driver is null
+        return;
+    }
+    #endif
+
+    for (;;) {
+        if (xSemaphoreTake(buttonSemaphore, portMAX_DELAY) == pdTRUE) {
+
+            #ifdef OSMI_DEBUG_MODE
+            ESP_LOGD("OSMI_Control (Button Task)", "Button Pressed!");
+            #endif
+
+            vTaskDelay(pdMS_TO_TICKS(10)); // Debounce
+
+            // Check button state; add more sophisticated debouncing if needed
+            if (digitalRead(driver->getStopPin()) == 0) {
+                driver->disableInIsr();
+
+                #ifdef OSMI_DEBUG_MODE
+                ESP_LOGD("OSMI_Control (Button Task)", "Limit Switch stops the motor");
+                #endif
+
+            } else {
+
+                #ifdef OSMI_DEBUG_MODE
+                ESP_LOGD("OSMI_Control (Button Task)", "Limit Switch bouncing");
+                #endif
+
+            }
+        } else {
+
+            #ifdef OSMI_DEBUG_MODE
+            ESP_LOGE("buttonTask", "Failed to take semaphore");
+            #endif
+        }
+    }
 }
 
 /// @brief Initialize the pulse counter systems.
@@ -163,13 +219,39 @@ void ESP32PwmSpiDriver::initStepperDriver(int chipSelectPin)
 
 void ESP32PwmSpiDriver::initGPIO()
 {
-    ESP_ERROR_CHECK(gpio_config(&io_conf));
-    gpio_install_isr_service(ESP_INTR_FLAG_LEVEL3);
-    gpio_isr_handler_add((gpio_num_t)stopPin, limitISRHandler, (void *)this);
+    
+
+    //gpio_install_isr_service(ESP_INTR_FLAG_LEVEL3);
+    
+    #ifdef OSMI_DEBUG_MODE
+        int isrServiceResult = gpio_install_isr_service(0);
+        ESP_LOGD("OSMI_Control", "Install ISR Service return %d", isrServiceResult);
+
+        ESP_ERROR_CHECK(gpio_config(&io_conf));
+
+        int isrAddHandlerResult = gpio_isr_handler_add((gpio_num_t)stopPin, limitISRHandler, (void *)this);
+        ESP_LOGD("OSMI_Control", "Add ISR Handler return %d", isrAddHandlerResult);
+
+    #else
+        gpio_install_isr_service(0);
+        gpio_config(&io_conf);
+        gpio_isr_handler_add((gpio_num_t)stopPin, limitISRHandler, (void *)this);
+	#endif
+
+    buttonSemaphore = xSemaphoreCreateBinary();
+    xTaskCreate(buttonTask, "Button Task", 2048, (void *)this, 1, NULL);
+    
+    //pinMode(stopPin, INPUT_PULLUP);
+    //attachInterruptArg(stopPin, limitISRHandler, (void *)this, FALLING);
+
 
     gpio_set_direction((gpio_num_t)stepPin, GPIO_MODE_INPUT_OUTPUT);
     gpio_matrix_in(stepPin, PCNT_SIG_CH0_IN1_IDX, 0);
     gpio_matrix_out(stepPin, LEDC_HS_SIG_OUT0_IDX + LEDC_CHANNEL_0, 1, 0);
+
+    #ifdef OSMI_DEBUG_MODE
+        
+	#endif
 }
 
 /// @brief Constructor for ESP32 PWM Serial-Peripheral Interface Driver.
@@ -181,6 +263,7 @@ void ESP32PwmSpiDriver::initGPIO()
 ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin, double pitch, double degreesPerStep)
 {
     this->stepPin = stepPin;
+    this->stopPin = stopPin;
     this->distancePerRotMm = pitch;
     this->degreesPerStep = degreesPerStep;
     this->distanceSteps = 0; // Assumes at 0. Should run thru calibrate routine.
@@ -190,6 +273,7 @@ ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin
         .pin_bit_mask = (1ull << stopPin),
         .mode = GPIO_MODE_INPUT,
         .pull_up_en = GPIO_PULLUP_ENABLE,
+        .pull_down_en=GPIO_PULLDOWN_DISABLE,
         .intr_type = GPIO_INTR_NEGEDGE,
     };
 
@@ -447,4 +531,9 @@ int ESP32PwmSpiDriver::setVelocity(double mmPerMinute)
 int ESP32PwmSpiDriver::getStatus(void)
 {
     return this->status;
+}
+
+int ESP32PwmSpiDriver::getStopPin(void)
+{
+    return stopPin;
 }

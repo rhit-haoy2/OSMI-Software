@@ -31,6 +31,8 @@ public:
     void disable();
     void enable(void);
 
+    int getStopPin(void);
+
     void setDirection(direction_t direction);
     direction_t getDirection(void);
 
@@ -40,10 +42,12 @@ public:
     void setStepsInIsr(long long steps);
 
     void initialize(void);
-
-private:
+    
     int stepPin;
     int stopPin;
+
+private:
+    
     int chipSelectPin;
 
     SemaphoreHandle_t mutex;
