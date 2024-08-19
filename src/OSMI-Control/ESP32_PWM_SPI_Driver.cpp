@@ -119,20 +119,42 @@ void buttonTask(void *driverInst) {
 
             vTaskDelay(pdMS_TO_TICKS(10)); // Debounce
 
-            // Check button state; add more sophisticated debouncing if needed
-            if (digitalRead(driver->depressDirLimitPin) == 0 || digitalRead(driver->retractDirLimitPin) == 0) {
-                driver->disableInIsr();
+            if (driver->isInTestMode()){
+                // Infinit back and forth
+                if (digitalRead(driver->depressDirLimitPin) == 0 && digitalRead(driver->retractDirLimitPin) == 1) {
+                    driver->disable();
+                    driver->setDirection(Reverse);
+                    if (driver->setVelocity(40) == ESP_OK){
+                        driver->enable();
+                    }
+                    ESP_LOGD("OSMI_Control (Button Task)", "In Test Node: Motor goes to reverse direction");
+                }
+                else if (digitalRead(driver->depressDirLimitPin) == 1 && digitalRead(driver->retractDirLimitPin) == 0) {
+                    driver->disable();
+                    driver->setDirection(Depress);
+                    if (driver->setVelocity(40) == ESP_OK){
+                        driver->enable();
+                    }
+                    ESP_LOGD("OSMI_Control (Button Task)", "In Test Node: Motor goes to depress direction");
+                }
 
-                #ifdef OSMI_DEBUG_MODE
-                ESP_LOGD("OSMI_Control (Button Task)", "Limit Switch stops the motor");
-                #endif
+            }
+            else{
+                // Check button state; add more sophisticated debouncing if needed
+                if (digitalRead(driver->depressDirLimitPin) == 0 || digitalRead(driver->retractDirLimitPin) == 0) {
+                    driver->disableInIsr();
 
-            } else {
+                    #ifdef OSMI_DEBUG_MODE
+                    ESP_LOGD("OSMI_Control (Button Task)", "Limit Switch stops the motor");
+                    #endif
 
-                #ifdef OSMI_DEBUG_MODE
-                ESP_LOGD("OSMI_Control (Button Task)", "Limit Switch bouncing");
-                #endif
+                } else {
 
+                    #ifdef OSMI_DEBUG_MODE
+                    ESP_LOGD("OSMI_Control (Button Task)", "Limit Switch bouncing");
+                    #endif
+
+                }
             }
         } else {
 
@@ -555,3 +577,23 @@ int ESP32PwmSpiDriver::getStatus(void)
 // {
 //     return stopPin;
 // }
+
+
+void ESP32PwmSpiDriver::enterTestMode(){
+    this->inTestMode = true;
+
+    this->disable();
+    this->setDirection(Depress);
+    if (this->setVelocity(40) == ESP_OK){
+       this->enable();
+    }
+}
+
+void ESP32PwmSpiDriver::exitTestMode(){
+    this->inTestMode = false;
+    this->disable();
+}
+
+boolean ESP32PwmSpiDriver::isInTestMode(){
+    return this->inTestMode;
+}

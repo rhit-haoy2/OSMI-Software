@@ -42,11 +42,17 @@ public:
     void setStepsInIsr(long long steps);
 
     void initialize(void);
-    
+
+    void enterTestMode();
+    void exitTestMode();
+    boolean isInTestMode();
+
     int stepPin;
     
     int depressDirLimitPin;
     int retractDirLimitPin;
+
+
 
 private:
     
@@ -69,6 +75,8 @@ private:
     EspDriverStatus_t status;
     int inverseDirection = 0;
     DRV8434S microStepperDriver;
+
+    boolean inTestMode;
 
     void initPWM(void);
     void initPulseCounter(void);

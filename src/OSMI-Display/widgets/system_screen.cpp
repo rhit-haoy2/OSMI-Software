@@ -36,8 +36,8 @@ static void resetinfufast_button_handler(lv_event_t *event){
             screen->Driver->enable();
         }
     }else if(code == LV_EVENT_RELEASED){
-        screen->Driver->disable();
-        screen->Driver->setDirection(Depress);
+        // screen->Driver->disable();
+        // screen->Driver->setDirection(Depress);
         
     }
     
@@ -94,6 +94,25 @@ static void forwardinfuslow_button_handler(lv_event_t *event){
     }
     
 }
+
+static void entertestmode_button_handler(lv_event_t *event){
+    system_screen_t *screen = (system_screen_t *)lv_obj_get_user_data(event->target);
+    lv_event_code_t code = lv_event_get_code(event);
+
+    if(code == LV_EVENT_PRESSED){
+        screen->Driver->enterTestMode();
+    }
+}
+
+static void exittestmode_button_handler(lv_event_t *event){
+    system_screen_t *screen = (system_screen_t *)lv_obj_get_user_data(event->target);
+    lv_event_code_t code = lv_event_get_code(event);
+
+    if(code == LV_EVENT_PRESSED){
+        screen->Driver->exitTestMode();
+    }
+}
+
 
 
 
@@ -157,4 +176,23 @@ void create_system_screen(system_screen_t *screen){
     lv_obj_center(temporary_label);
     lv_obj_set_user_data(screen->forwardinfuslow_button,screen);
     lv_obj_add_event_cb(screen->forwardinfuslow_button, forwardinfuslow_button_handler,LV_EVENT_ALL,screen);
+
+    #ifdef OSMI_DEBUG_MODE
+
+    screen->entertestmode_button = lv_btn_create(screen->system_screen);
+    temporary_label = lv_label_create(screen->entertestmode_button);
+    lv_label_set_text(temporary_label, "Enter Test Mode");
+    lv_obj_center(temporary_label);
+    lv_obj_set_user_data(screen->entertestmode_button,screen);
+    lv_obj_add_event_cb(screen->entertestmode_button, entertestmode_button_handler,LV_EVENT_ALL,screen);
+    
+
+    screen->exittestmode_button = lv_btn_create(screen->system_screen);
+    temporary_label = lv_label_create(screen->exittestmode_button);
+    lv_label_set_text(temporary_label, "Exit Test Mode");
+    lv_obj_center(temporary_label);
+    lv_obj_set_user_data(screen->exittestmode_button,screen);
+    lv_obj_add_event_cb(screen->exittestmode_button, exittestmode_button_handler,LV_EVENT_ALL,screen);
+
+    #endif
 }

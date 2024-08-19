@@ -27,6 +27,8 @@ typedef struct
     lv_obj_t *resetinfuslow_button;
     lv_obj_t *forwardinfufast_button;
     lv_obj_t *forwardinfuslow_button;
+    lv_obj_t *entertestmode_button;
+    lv_obj_t *exittestmode_button;
 
 } system_screen_t;
 
