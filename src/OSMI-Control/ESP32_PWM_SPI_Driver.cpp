@@ -120,7 +120,7 @@ void buttonTask(void *driverInst) {
             vTaskDelay(pdMS_TO_TICKS(10)); // Debounce
 
             // Check button state; add more sophisticated debouncing if needed
-            if (digitalRead(driver->getStopPin()) == 0) {
+            if (digitalRead(driver->depressDirLimitPin) == 0 || digitalRead(driver->retractDirLimitPin) == 0) {
                 driver->disableInIsr();
 
                 #ifdef OSMI_DEBUG_MODE
@@ -229,8 +229,10 @@ void ESP32PwmSpiDriver::initGPIO()
 
         ESP_ERROR_CHECK(gpio_config(&io_conf));
 
-        int isrAddHandlerResult = gpio_isr_handler_add((gpio_num_t)stopPin, limitISRHandler, (void *)this);
+        int isrAddHandlerResult = gpio_isr_handler_add((gpio_num_t)depressDirLimitPin, limitISRHandler, (void *)this);
         ESP_LOGD("OSMI_Control", "Add ISR Handler return %d", isrAddHandlerResult);
+
+        gpio_isr_handler_add((gpio_num_t)retractDirLimitPin, limitISRHandler, (void *)this);
 
     #else
         gpio_install_isr_service(0);
@@ -257,20 +259,22 @@ void ESP32PwmSpiDriver::initGPIO()
 /// @brief Constructor for ESP32 PWM Serial-Peripheral Interface Driver.
 /// @param chipSelectPin Chip Select for DRV8434S
 /// @param stepPin Step pin for DRV8434S
-/// @param stopPin Limit switch pin.
+/// @param depressDirLimitPin Limit switch pin on maximum depress position.
+/// @param retractDirLimitPin Limit switch pin on maximum retracted position
 /// @param pitch Distance per rotation of stepper motor in millimeters.
 /// @param degreesPerStep degrees per step of the stepper motor.
-ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin, double pitch, double degreesPerStep)
+ESP32PwmSpiDriver::ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int depressDirLimitPin, int retractDirLimitPin, double pitch, double degreesPerStep)
 {
     this->stepPin = stepPin;
-    this->stopPin = stopPin;
+    this->depressDirLimitPin = depressDirLimitPin;
+    this->retractDirLimitPin = retractDirLimitPin;
     this->distancePerRotMm = pitch;
     this->degreesPerStep = degreesPerStep;
     this->distanceSteps = 0; // Assumes at 0. Should run thru calibrate routine.
     this->chipSelectPin = chipSelectPin;
 
     io_conf = gpio_config_t{
-        .pin_bit_mask = (1ull << stopPin),
+        .pin_bit_mask = (1ull << retractDirLimitPin) | (1ull << depressDirLimitPin),
         .mode = GPIO_MODE_INPUT,
         .pull_up_en = GPIO_PULLUP_ENABLE,
         .pull_down_en=GPIO_PULLDOWN_DISABLE,
@@ -336,6 +340,7 @@ int64_t ESP32PwmSpiDriver::getDistanceSteps(void)
 void ESP32PwmSpiDriver::enable()
 {
     xSemaphoreTake(mutex, portMAX_DELAY);
+
     // Re-enable driver.
     microStepperDriver.clearFaults(); // Clear faults on the driver.
     this->distanceSteps = 0;
@@ -451,6 +456,19 @@ int ESP32PwmSpiDriver::setVelocity(double mmPerMinute)
     getDistanceSteps();
     xSemaphoreTake(mutex, portMAX_DELAY);
 
+    if ((digitalRead(depressDirLimitPin) == 0 && this->getDirection() == Depress) ||
+        (digitalRead(retractDirLimitPin) == 0 && this->getDirection() == Reverse) )
+    {
+        #ifdef OSMI_DEBUG_MODE
+            ESP_LOGD("OSMI_Control", "Motor already reashed limit; Motor drive does not re-enabled unless operate in ther other direction");
+        #endif
+
+        xSemaphoreGive(mutex);
+
+        //disable();
+        return -1;
+    }
+
     if (mmPerMinute < 0)
     {
         return -1;
@@ -533,7 +551,7 @@ int ESP32PwmSpiDriver::getStatus(void)
     return this->status;
 }
 
-int ESP32PwmSpiDriver::getStopPin(void)
-{
-    return stopPin;
-}
+// int ESP32PwmSpiDriver::getStopPin(void)
+// {
+//     return stopPin;
+// }

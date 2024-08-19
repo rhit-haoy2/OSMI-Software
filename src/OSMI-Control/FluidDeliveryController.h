@@ -20,7 +20,7 @@ typedef enum
 class ESP32PwmSpiDriver : public FluidDeliveryDriver
 {
 public:
-    ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int stopPin, double pitch, double degreesPerStep);
+    ESP32PwmSpiDriver(int chipSelectPin, int stepPin, int depressDirLimitPin, int retractDirLimitPin, double pitch, double degreesPerStep);
 
     double getDistanceMm(void);
     long long getDistanceSteps(void);
@@ -44,7 +44,9 @@ public:
     void initialize(void);
     
     int stepPin;
-    int stopPin;
+    
+    int depressDirLimitPin;
+    int retractDirLimitPin;
 
 private:
     
